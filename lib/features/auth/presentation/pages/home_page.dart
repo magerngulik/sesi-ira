@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sesi_ira/core/widgets/dashed_line.dart';
 
+import '../../../cases/presentation/pages/cases_page.dart';
+import '../../../clients/presentation/pages/clients_page.dart';
+import '../../../psychologists/presentation/pages/psychologists_page.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
-import 'profile_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -18,11 +21,45 @@ class HomePage extends StatelessWidget {
       builder: (context, state) {
         final user = state.user;
         final email = user?.email ?? 'guest@sesi-ira.dev';
+        final greetingName = _greetingName(email);
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final isDesktop = screenWidth >= 920;
+        final summaryCrossAxisCount = isDesktop ? 4 : 2;
+        final featureCrossAxisCount = isDesktop ? 3 : 1;
+        final workflowItems = const <_WorkflowItemData>[
+          _WorkflowItemData(
+            title: '1. Tambah klien',
+            description: 'Lengkapi biodata, nomor kontak, dan catatan awal.',
+            icon: Icons.person_add_alt_1_rounded,
+          ),
+          _WorkflowItemData(
+            title: '2. Siapkan psikolog',
+            description:
+                'Pastikan data psikolog aktif tersedia untuk assignment.',
+            icon: Icons.medical_services_rounded,
+          ),
+          _WorkflowItemData(
+            title: '3. Buat case',
+            description: 'Tentukan tujuan, keluhan, kategori, dan status awal.',
+            icon: Icons.folder_special_rounded,
+          ),
+          _WorkflowItemData(
+            title: '4. Lanjut ke sesi',
+            description:
+                'Struktur dashboard sudah siap untuk modul sesi berikutnya.',
+            icon: Icons.calendar_month_rounded,
+          ),
+        ];
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Home'),
+            title: const Text('Dashboard'),
             actions: <Widget>[
+              IconButton(
+                onPressed: () => context.read<AuthCubit>().bootstrap(),
+                tooltip: 'Refresh Auth',
+                icon: const Icon(Icons.sync_rounded),
+              ),
               IconButton(
                 onPressed: () => context.read<AuthCubit>().signOut(),
                 tooltip: 'Logout',
@@ -30,125 +67,526 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(24),
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: <Color>[Color(0xFF0F766E), Color(0xFF115E59)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Halo, ${email.split('@').first}',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Fondasi app sudah siap dengan Supabase, Bloc, dan GoRouter.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: <Color>[Color(0xFFF4F7F3), Color(0xFFE9F3F1)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+            ),
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 children: <Widget>[
-                  _QuickActionCard(
-                    title: 'Lihat Profile',
-                    subtitle: 'Buka halaman data akun aktif',
-                    icon: Icons.person_rounded,
-                    onTap: () => context.push(ProfilePage.path),
+                  // _HeroSection(
+                  //   greetingName: greetingName,
+                  //   email: email,
+                  //   status: state.status.name,
+                  //   onPrimaryTap: () => context.push(CasesPage.path),
+                  //   onSecondaryTap: () => context.push(ClientsPage.path),
+                  // ),
+                  const SizedBox(height: 20),
+                  _SectionTitle(
+                    title: 'Ringkasan Cepat',
+                    subtitle: 'Titik masuk utama untuk operasional harian.',
                   ),
-                  _QuickActionCard(
-                    title: 'Refresh Auth',
-                    subtitle: 'Sinkronkan session aktif lagi',
-                    icon: Icons.sync_rounded,
-                    onTap: () => context.read<AuthCubit>().bootstrap(),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: summaryCrossAxisCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 15,
+                    // childAspectRatio: isDesktop ? 1.45 : 1.2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: const <Widget>[
+                      _SummaryCard(
+                        title: 'Klien',
+                        value: 'Client intake',
+                        description:
+                            'Kelola biodata, kontak, dan catatan awal klien.',
+                        icon: Icons.groups_rounded,
+                        accent: Color(0xFF0F766E),
+                      ),
+                      _SummaryCard(
+                        title: 'Psikolog',
+                        value: 'Tim aktif',
+                        description:
+                            'Atur praktisi yang menangani proses terapi.',
+                        icon: Icons.psychology_alt_rounded,
+                        accent: Color(0xFF0F4C81),
+                      ),
+                      _SummaryCard(
+                        title: 'Case',
+                        value: 'Terapi berjalan',
+                        description:
+                            'Hubungkan klien, tujuan, dan penanggung jawab.',
+                        icon: Icons.folder_open_rounded,
+                        accent: Color(0xFFB45309),
+                      ),
+                      _SummaryCard(
+                        title: 'Sesi',
+                        value: 'Tahap berikutnya',
+                        description:
+                            'Dashboard siap dilanjutkan ke pencatatan sesi.',
+                        icon: Icons.event_note_rounded,
+                        accent: Color(0xFF7C3AED),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 20),
+                  _SectionTitle(
+                    title: 'Menu Operasional',
+                    subtitle:
+                        'Pilih area kerja berdasarkan alur penggunaan aplikasi.',
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: 1,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1.5,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: <Widget>[
+                      _FeatureCard(
+                        title: 'Manajemen Klien',
+                        subtitle:
+                            'Mulai dari data dasar klien sebelum masuk ke proses case.',
+                        badge: 'Data dasar',
+                        icon: Icons.badge_rounded,
+                        accent: const Color(0xFF0F766E),
+                        onTap: () => context.push(ClientsPage.path),
+                      ),
+                      _FeatureCard(
+                        title: 'Manajemen Psikolog',
+                        subtitle:
+                            'Lihat praktisi aktif dan siapkan assignment untuk case.',
+                        badge: 'Resource',
+                        icon: Icons.psychology_rounded,
+                        accent: const Color(0xFF1D4ED8),
+                        onTap: () => context.push(PsychologistsPage.path),
+                      ),
+                      _FeatureCard(
+                        title: 'Case Monitoring',
+                        subtitle:
+                            'Buat case baru, tentukan tujuan, dan hubungkan pihak terkait.',
+                        badge: 'Core workflow',
+                        icon: Icons.assignment_rounded,
+                        accent: const Color(0xFFD97706),
+                        onTap: () => context.push(CasesPage.path),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // if (isDesktop)
+                  //   Row(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: <Widget>[
+                  //       Expanded(
+                  //         flex: 3,
+                  //         child: _WorkflowPanel(items: workflowItems),
+                  //       ),
+                  //       const SizedBox(width: 12),
+                  //       Expanded(
+                  //         flex: 2,
+                  //         child: _AccountPanel(
+                  //           email: email,
+                  //           status: state.status.name,
+                  //           userId: user?.id ?? 'Belum ada session aktif',
+                  //           onProfileTap: () => context.push(ProfilePage.path),
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   )
+                  // else ...<Widget>[
+                  //   _WorkflowPanel(items: workflowItems),
+                  //   const SizedBox(height: 12),
+                  //   _AccountPanel(
+                  //     email: email,
+                  //     status: state.status.name,
+                  //     userId: user?.id ?? 'Belum ada session aktif',
+                  //     onProfileTap: () => context.push(ProfilePage.path),
+                  //   ),
+                  // ],
                 ],
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Ringkasan akun',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _InfoTile(
-                label: 'Email',
-                value: email,
-              ),
-              _InfoTile(
-                label: 'User ID',
-                value: user?.id ?? 'Belum ada session aktif',
-              ),
-              _InfoTile(
-                label: 'Status',
-                value: state.status.name,
-              ),
-            ],
+            ),
           ),
         );
       },
     );
   }
+
+  String _greetingName(String email) {
+    final localPart = email.split('@').first;
+    final normalized = localPart
+        .replaceAll('.', ' ')
+        .replaceAll('_', ' ')
+        .trim();
+    if (normalized.isEmpty) {
+      return 'Tim Sesi Ira';
+    }
+
+    return normalized
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
+  }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
+class _HeroSection extends StatelessWidget {
+  const _HeroSection({
+    required this.greetingName,
+    required this.email,
+    required this.status,
+    required this.onPrimaryTap,
+    required this.onSecondaryTap,
+  });
+
+  final String greetingName;
+  final String email;
+  final String status;
+  final VoidCallback onPrimaryTap;
+  final VoidCallback onSecondaryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          colors: <Color>[
+            Color(0xFF0F766E),
+            Color(0xFF164E63),
+            Color(0xFF1E3A5F),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 28,
+            offset: Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            top: -18,
+            right: -16,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -36,
+            right: 54,
+            child: Container(
+              width: 86,
+              height: 86,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Sesi Ira Workspace',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Halo, $greetingName',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Dashboard ini dirapikan untuk memudahkan alur dari intake klien sampai pembentukan case terapi.',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: <Widget>[
+                  _HeroInfoPill(icon: Icons.mail_outline_rounded, label: email),
+                  _HeroInfoPill(
+                    icon: Icons.shield_outlined,
+                    label: 'Status ${status.toUpperCase()}',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: <Widget>[
+                  FilledButton.icon(
+                    onPressed: onPrimaryTap,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0F766E),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Buka Case'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onSecondaryTap,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                    ),
+                    icon: const Icon(Icons.groups_rounded),
+                    label: const Text('Kelola Klien'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF17212B),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF526071)),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.description,
+    required this.icon,
+    required this.accent,
+  });
+
+  final String title;
+  final String value;
+  final String description;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: accent),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF526071),
+              height: 1.4,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
     required this.title,
     required this.subtitle,
+    required this.badge,
     required this.icon,
+    required this.accent,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final String badge;
   final IconData icon;
+  final Color accent;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Ink(
-        width: 220,
-        padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(width: 1.0, color: accent),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(icon, color: const Color(0xFF0F766E)),
-            const SizedBox(height: 16),
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, color: accent),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    badge,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                height: 1.15,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(subtitle),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF526071),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 16),
+            DashedLine(color: accent),
+            const SizedBox(height: 10.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  'Buka menu',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward_rounded, color: accent, size: 18),
+              ],
+            ),
           ],
         ),
       ),
@@ -156,40 +594,242 @@ class _QuickActionCard extends StatelessWidget {
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.label,
-    required this.value,
+class _WorkflowPanel extends StatelessWidget {
+  const _WorkflowPanel({required this.items});
+
+  final List<_WorkflowItemData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Workflow Utama',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Urutan kerja yang paling natural berdasarkan schema yang sudah kita pakai.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF526071)),
+          ),
+          const SizedBox(height: 18),
+          ...items.map((item) => _WorkflowItem(item: item)),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkflowItem extends StatelessWidget {
+  const _WorkflowItem({required this.item});
+
+  final _WorkflowItemData item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE6F5F2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(item.icon, color: const Color(0xFF0F766E)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF526071),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountPanel extends StatelessWidget {
+  const _AccountPanel({
+    required this.email,
+    required this.status,
+    required this.userId,
+    required this.onProfileTap,
   });
+
+  final String email;
+  final String status;
+  final String userId;
+  final VoidCallback onProfileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13212E),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.person_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Akun Aktif',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _AccountRow(label: 'Email', value: email),
+          _AccountRow(label: 'Status', value: status),
+          _AccountRow(label: 'User ID', value: userId),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onProfileTap,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+              icon: const Icon(Icons.manage_accounts_rounded),
+              label: const Text('Buka Profil'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroInfoPill extends StatelessWidget {
+  const _HeroInfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 18, color: Colors.white),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: const Color(0xFF9FB0C3),
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(value)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.white, height: 1.35),
+          ),
         ],
       ),
     );
   }
+}
+
+class _WorkflowItemData {
+  const _WorkflowItemData({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
 }
