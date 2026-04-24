@@ -23,11 +23,15 @@ class SessionsPage extends StatefulWidget {
 class _SessionsPageState extends State<SessionsPage> {
   final SessionsRepository _repository = const SessionsRepository();
   late Future<List<SessionModel>> _sessionsFuture;
+  late Future<CaseSessionContext> _caseContextFuture;
 
   @override
   void initState() {
     super.initState();
     _sessionsFuture = _repository.fetchSessions(caseId: widget.caseSummary.id);
+    _caseContextFuture = _repository.fetchCaseSessionContext(
+      widget.caseSummary.id,
+    );
   }
 
   Future<void> _reload() async {
@@ -35,9 +39,15 @@ class _SessionsPageState extends State<SessionsPage> {
       _sessionsFuture = _repository.fetchSessions(
         caseId: widget.caseSummary.id,
       );
+      _caseContextFuture = _repository.fetchCaseSessionContext(
+        widget.caseSummary.id,
+      );
     });
 
-    await _sessionsFuture;
+    await Future.wait<dynamic>(<Future<dynamic>>[
+      _sessionsFuture,
+      _caseContextFuture,
+    ]);
   }
 
   Future<void> _openCreateSessionPage() async {
@@ -101,73 +111,236 @@ class _SessionsPageState extends State<SessionsPage> {
               }
 
               final sessions = snapshot.data ?? <SessionModel>[];
-              if (sessions.isEmpty) {
-                return StateMessage(
-                  title: 'Belum ada session',
-                  subtitle:
-                      'Tambahkan session pertama untuk mulai mencatat perkembangan case ini.',
-                  actionLabel: 'Tambah Session',
-                  onPressed: _openCreateSessionPage,
-                );
-              }
-
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFEAECF0)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          widget.caseSummary.title,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: <Widget>[
-                            InfoBadge(
-                              icon: Icons.person_outline_rounded,
-                              value: widget.caseSummary.clientName ?? 'Klien',
-                            ),
-                            InfoBadge(
-                              icon: Icons.psychology_alt_outlined,
-                              value:
-                                  widget.caseSummary.psychologistName ??
-                                  'Psikolog',
-                            ),
-                            InfoBadge(
-                              icon: Icons.category_outlined,
-                              value:
-                                  widget.caseSummary.category ??
-                                  'Tanpa kategori',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  FutureBuilder<CaseSessionContext>(
+                    future: _caseContextFuture,
+                    builder: (context, caseContextSnapshot) {
+                      final caseContext =
+                          caseContextSnapshot.data ??
+                          const CaseSessionContext();
+
+                      return _CaseSummaryCard(
+                        caseSummary: widget.caseSummary,
+                        caseTypeName:
+                            caseContext.caseTypeName ??
+                            widget.caseSummary.caseTypeName,
+                        tagNames: caseContext.tagNames.isNotEmpty
+                            ? caseContext.tagNames
+                            : widget.caseSummary.tagNames,
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
-                  ...sessions.map(
-                    (session) => Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: _SessionCard(session: session),
+                  if (sessions.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFEAECF0)),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          Icon(
+                            Icons.event_busy_outlined,
+                            size: 42,
+                            color: const Color(0xFF98A2B3),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Belum ada session',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF101828),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Case ini sudah dipilih, tapi session-nya masih kosong. Tambahkan session pertama untuk mulai mencatat perkembangannya.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF667085),
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _openCreateSessionPage,
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Tambah Session'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...sessions.map(
+                      (session) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _SessionCard(session: session),
+                      ),
                     ),
-                  ),
                 ],
               );
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CaseSummaryCard extends StatelessWidget {
+  const _CaseSummaryCard({
+    required this.caseSummary,
+    this.caseTypeName,
+    this.tagNames = const <String>[],
+  });
+
+  final CaseSummaryModel caseSummary;
+  final String? caseTypeName;
+  final List<String> tagNames;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('dd MMM yyyy');
+
+    return Column(
+      children: <Widget>[
+        _SummarySectionCard(
+          title: 'Informasi Case',
+          rows: <_SummaryInfoRow>[
+            _SummaryInfoRow(
+              label: 'Client',
+              value: caseSummary.clientName ?? '-',
+            ),
+            _SummaryInfoRow(
+              label: 'Psikolog',
+              value: caseSummary.psychologistName ?? '-',
+            ),
+            _SummaryInfoRow(label: 'Judul Case', value: caseSummary.title),
+            _SummaryInfoRow(
+              label: 'Kategori',
+              value: caseSummary.category ?? '-',
+            ),
+            _SummaryInfoRow(
+              label: 'Tanggal Mulai',
+              value: dateFormat.format(caseSummary.startDate),
+            ),
+            _SummaryInfoRow(label: 'Tipe Kasus', value: caseTypeName ?? '-'),
+            _SummaryInfoRow(
+              label: 'Status',
+              value: _caseStatusLabel(caseSummary.status),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _SummarySectionCard(
+          title: 'Konten Penanganan',
+          rows: <_SummaryInfoRow>[
+            _SummaryInfoRow(
+              label: 'Keluhan',
+              value: _displayOrDash(caseSummary.complaint),
+            ),
+            _SummaryInfoRow(
+              label: 'Tujuan',
+              value: _displayOrDash(caseSummary.goal),
+            ),
+            _SummaryInfoRow(
+              label: 'Tags',
+              value: tagNames.isEmpty ? '-' : tagNames.join(', '),
+            ),
+            const _SummaryInfoRow(
+              label: 'Tanggal Selesai',
+              value: 'Akan diisi saat case ditutup',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SummarySectionCard extends StatelessWidget {
+  const _SummarySectionCard({required this.title, required this.rows});
+
+  final String title;
+  final List<_SummaryInfoRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF17212B),
+            ),
+          ),
+          const SizedBox(height: 18),
+          ...rows.map((row) => _SummaryInfoRowWidget(row: row)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryInfoRow {
+  const _SummaryInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+class _SummaryInfoRowWidget extends StatelessWidget {
+  const _SummaryInfoRowWidget({required this.row});
+
+  final _SummaryInfoRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 132,
+            child: Text(
+              row.label,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              row.value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF1E293B),
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -314,6 +487,24 @@ _SessionStatusStyle _sessionStatusStyle(String status) {
       backgroundColor: Color(0xFFEAF2FF),
     ),
   };
+}
+
+String _caseStatusLabel(String status) {
+  return switch (status) {
+    'completed' => 'Completed',
+    'cancelled' => 'Cancelled',
+    'on_hold' => 'On Hold',
+    _ => 'Active',
+  };
+}
+
+String _displayOrDash(String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return '-';
+  }
+
+  return trimmed;
 }
 
 class _StatusPill extends StatelessWidget {

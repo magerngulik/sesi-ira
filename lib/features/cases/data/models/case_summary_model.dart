@@ -5,6 +5,7 @@ class CaseSummaryModel {
     required this.id,
     required this.clientId,
     required this.assignedPsychologistId,
+    this.caseTypeId,
     required this.title,
     required this.status,
     required this.startDate,
@@ -14,11 +15,14 @@ class CaseSummaryModel {
     this.goal,
     this.clientName,
     this.psychologistName,
+    this.caseTypeName,
+    this.tagNames = const <String>[],
   });
 
   final String id;
   final String clientId;
   final String assignedPsychologistId;
+  final String? caseTypeId;
   final String title;
   final String status;
   final DateTime startDate;
@@ -28,10 +32,23 @@ class CaseSummaryModel {
   final String? goal;
   final String? clientName;
   final String? psychologistName;
+  final String? caseTypeName;
+  final List<String> tagNames;
 
   factory CaseSummaryModel.fromMap(Map<String, dynamic> map) {
     final clientMap = map['clients'] as Map<String, dynamic>?;
+    final caseTypeMap = map['case_types'] as Map<String, dynamic>?;
     final psychologistMap = map['psychologists'] as Map<String, dynamic>?;
+    final tagRelationRows =
+        map['case_tag_relations'] as List<dynamic>? ?? <dynamic>[];
+    final tagNames = tagRelationRows
+        .map((item) => item as Map<String, dynamic>)
+        .map((item) => item['case_tags'] as Map<String, dynamic>?)
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['name'] as String?)
+        .whereType<String>()
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
     final sessionRows = map['sessions'] as List<dynamic>? ?? <dynamic>[];
     final sessions =
         sessionRows
@@ -53,6 +70,7 @@ class CaseSummaryModel {
       id: map['id'] as String,
       clientId: map['client_id'] as String? ?? '',
       assignedPsychologistId: map['assigned_psychologist_id'] as String? ?? '',
+      caseTypeId: map['case_type_id'] as String?,
       title: map['title'] as String? ?? '-',
       status: map['status'] as String? ?? 'active',
       startDate: DateTime.parse(map['start_date'] as String),
@@ -62,6 +80,8 @@ class CaseSummaryModel {
       goal: map['goal'] as String?,
       clientName: clientMap?['full_name'] as String?,
       psychologistName: psychologistMap?['name'] as String?,
+      caseTypeName: caseTypeMap?['name'] as String?,
+      tagNames: tagNames,
     );
   }
 }

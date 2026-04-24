@@ -48,6 +48,16 @@ class CreateSessionInterventionPlanInput {
   final String? afterCondition;
 }
 
+class CaseSessionContext {
+  const CaseSessionContext({
+    this.caseTypeName,
+    this.tagNames = const <String>[],
+  });
+
+  final String? caseTypeName;
+  final List<String> tagNames;
+}
+
 class SessionsRepository {
   const SessionsRepository();
 
@@ -183,6 +193,43 @@ class SessionsRepository {
         .single();
 
     return SessionModel.fromMap(response);
+  }
+
+  Future<CaseSessionContext> fetchCaseSessionContext(String caseId) async {
+    final results = await Future.wait<dynamic>(<Future<dynamic>>[
+      SupabaseService.client
+          .from('cases')
+          .select('''
+            case_type_id,
+            case_types:case_type_id(name)
+          ''')
+          .eq('id', caseId)
+          .maybeSingle(),
+      SupabaseService.client
+          .from('case_tag_relations')
+          .select('''
+            tag_id,
+            case_tags:tag_id(name)
+          ''')
+          .eq('case_id', caseId),
+    ]);
+
+    final caseMap = results[0] as Map<String, dynamic>?;
+    final tagRows = results[1] as List<dynamic>? ?? <dynamic>[];
+    final caseTypeMap = caseMap?['case_types'] as Map<String, dynamic>?;
+    final tagNames = tagRows
+        .map((item) => item as Map<String, dynamic>)
+        .map((item) => item['case_tags'] as Map<String, dynamic>?)
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['name'] as String?)
+        .whereType<String>()
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
+
+    return CaseSessionContext(
+      caseTypeName: caseTypeMap?['name'] as String?,
+      tagNames: tagNames,
+    );
   }
 
   Future<List<InterventionModel>> fetchInterventions({
