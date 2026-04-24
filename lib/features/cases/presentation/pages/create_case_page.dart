@@ -7,7 +7,9 @@ import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../psychologists/data/models/psychologist_model.dart';
 import '../../../psychologists/data/repositories/psychologists_repository.dart';
 import '../../data/models/case_tag_model.dart';
+import '../../data/models/case_type_model.dart';
 import '../../data/repositories/case_tags_repository.dart';
+import '../../data/repositories/case_types_repository.dart';
 import '../../data/repositories/cases_repository.dart';
 
 class CreateCasePage extends StatefulWidget {
@@ -42,6 +44,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
   final PsychologistsRepository _psychologistsRepository =
       const PsychologistsRepository();
   final CaseTagsRepository _caseTagsRepository = const CaseTagsRepository();
+  final CaseTypesRepository _caseTypesRepository = const CaseTypesRepository();
   final _titleController = TextEditingController();
   final _complaintController = TextEditingController();
   final _goalController = TextEditingController();
@@ -55,7 +58,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
   String? _selectedCategory;
   String _selectedStatus = 'active';
   DateTime _startDate = DateTime.now();
-  DateTime? _endDate;
+  String? _selectedCaseTypeId;
   Set<String> _selectedTagIds = <String>{};
   bool _isSubmitting = false;
 
@@ -77,11 +80,13 @@ class _CreateCasePageState extends State<CreateCasePage> {
     final clients = await _clientsRepository.fetchClients();
     final psychologists = await _psychologistsRepository.fetchPsychologists();
     final caseTags = await _caseTagsRepository.fetchCaseTags();
+    final caseTypes = await _caseTypesRepository.fetchCaseTypes();
 
     return _CreateCaseOptions(
       clients: clients,
       psychologists: psychologists,
       caseTags: caseTags,
+      caseTypes: caseTypes.where((item) => item.isActive).toList(),
     );
   }
 
@@ -117,11 +122,13 @@ class _CreateCasePageState extends State<CreateCasePage> {
               }
 
               final options = snapshot.data!;
-              if (options.clients.isEmpty || options.psychologists.isEmpty) {
+              if (options.clients.isEmpty ||
+                  options.psychologists.isEmpty ||
+                  options.caseTypes.isEmpty) {
                 return StateMessage(
                   title: 'Data master belum lengkap',
                   subtitle:
-                      'Pastikan sudah ada minimal 1 klien dan 1 psikolog sebelum membuat case.',
+                      'Pastikan sudah ada minimal 1 klien, 1 psikolog, dan 1 tipe kasus aktif sebelum membuat case.',
                   actionLabel: 'Tutup',
                   onPressed: () => Navigator.of(context).pop(),
                 );
@@ -129,6 +136,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
 
               _selectedClientId ??= options.clients.first.id;
               _selectedPsychologistId ??= options.psychologists.first.id;
+              _selectedCaseTypeId ??= options.caseTypes.first.id;
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
@@ -342,6 +350,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
   }
 
   Widget _buildExtraDetailStep(_CreateCaseOptions options, ThemeData theme) {
+    final selectedCaseType = options.findCaseTypeById(_selectedCaseTypeId);
     final selectedTags = options.caseTags
         .where((tag) => _selectedTagIds.contains(tag.id))
         .toList();
@@ -358,12 +367,24 @@ class _CreateCasePageState extends State<CreateCasePage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Tambahkan metadata opsional supaya case lebih rapi saat dikelola.',
+          'Lengkapi referensi tambahan yang dibutuhkan saat case dibuat.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: const Color(0xFF667085),
           ),
         ),
         const SizedBox(height: 20),
+        _EntityPickerField<CaseTypeModel>(
+          label: 'Tipe Kasus',
+          requiredField: true,
+          value: selectedCaseType,
+          titleBuilder: (caseType) => caseType.name,
+          subtitleBuilder: (caseType) =>
+              (caseType.description ?? '').trim().isEmpty
+              ? 'Tipe case aktif'
+              : caseType.description!,
+          onTap: () => _pickCaseType(options.caseTypes),
+        ),
+        const SizedBox(height: 16),
         const _SectionFieldLabel(label: 'Tags'),
         const SizedBox(height: 8),
         _TagPickerField(
@@ -371,21 +392,29 @@ class _CreateCasePageState extends State<CreateCasePage> {
           onTap: () => _pickTags(options.caseTags),
         ),
         const SizedBox(height: 16),
-        const _SectionFieldLabel(label: 'Tanggal Selesai'),
-        const SizedBox(height: 8),
-        _DatePickerField(
-          value: _endDate == null
-              ? 'Pilih tanggal selesai'
-              : _displayDateFormat.format(_endDate!),
-          isPlaceholder: _endDate == null,
-          onTap: _pickEndDate,
-          onClear: _endDate == null
-              ? null
-              : () {
-                  setState(() {
-                    _endDate = null;
-                  });
-                },
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Icon(Icons.info_outline_rounded, color: Color(0xFF475467)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tanggal selesai tidak diisi saat pembuatan case. Nilai ini akan tetap null dan baru diupdate ketika case sudah close.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF475467),
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -396,6 +425,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
     final selectedPsychologist = options.findPsychologistById(
       _selectedPsychologistId,
     );
+    final selectedCaseType = options.findCaseTypeById(_selectedCaseTypeId);
     final selectedTags = options.caseTags
         .where((tag) => _selectedTagIds.contains(tag.id))
         .map((tag) => tag.name)
@@ -440,6 +470,10 @@ class _CreateCasePageState extends State<CreateCasePage> {
               value: _displayDateFormat.format(_startDate),
             ),
             _SummaryRowData(
+              label: 'Tipe Kasus',
+              value: selectedCaseType?.name ?? '-',
+            ),
+            _SummaryRowData(
               label: 'Status',
               value: _statusLabels[_selectedStatus] ?? _selectedStatus,
             ),
@@ -463,9 +497,7 @@ class _CreateCasePageState extends State<CreateCasePage> {
             ),
             _SummaryRowData(
               label: 'Tanggal Selesai',
-              value: _endDate == null
-                  ? '-'
-                  : _displayDateFormat.format(_endDate!),
+              value: 'Akan diisi saat case ditutup',
             ),
           ],
         ),
@@ -530,6 +562,10 @@ class _CreateCasePageState extends State<CreateCasePage> {
       return;
     }
 
+    if (_currentStep == 1 && !_validateSecondStep(options)) {
+      return;
+    }
+
     setState(() {
       _currentStep += 1;
     });
@@ -564,6 +600,15 @@ class _CreateCasePageState extends State<CreateCasePage> {
     return true;
   }
 
+  bool _validateSecondStep(_CreateCaseOptions options) {
+    if (options.findCaseTypeById(_selectedCaseTypeId) == null) {
+      _showFormMessage('Tipe kasus wajib dipilih.');
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _submit() async {
     setState(() {
       _isSubmitting = true;
@@ -573,9 +618,9 @@ class _CreateCasePageState extends State<CreateCasePage> {
       await _repository.createCase(
         clientId: _selectedClientId!,
         psychologistId: _selectedPsychologistId!,
+        caseTypeId: _selectedCaseTypeId!,
         title: _titleController.text,
         startDate: _submitDateFormat.format(_startDate),
-        endDate: _endDate == null ? null : _submitDateFormat.format(_endDate!),
         category: _selectedCategory,
         complaint: _complaintController.text,
         goal: _goalController.text,
@@ -748,6 +793,42 @@ class _CreateCasePageState extends State<CreateCasePage> {
     }
   }
 
+  Future<void> _pickCaseType(List<CaseTypeModel> caseTypes) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            itemCount: caseTypes.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final caseType = caseTypes[index];
+              final subtitle = (caseType.description ?? '').trim().isEmpty
+                  ? 'Tipe case aktif'
+                  : caseType.description!;
+
+              return _PickerListTile(
+                title: caseType.name,
+                subtitle: subtitle,
+                isSelected: caseType.id == _selectedCaseTypeId,
+                onTap: () => Navigator.of(context).pop(caseType.id),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedCaseTypeId = result;
+      });
+    }
+  }
+
   Future<void> _pickStartDate() async {
     final selected = await showDatePicker(
       context: context,
@@ -762,26 +843,6 @@ class _CreateCasePageState extends State<CreateCasePage> {
 
     setState(() {
       _startDate = selected;
-      if (_endDate != null && _endDate!.isBefore(_startDate)) {
-        _endDate = _startDate;
-      }
-    });
-  }
-
-  Future<void> _pickEndDate() async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: _endDate ?? _startDate,
-      firstDate: _startDate,
-      lastDate: DateTime(2100),
-    );
-
-    if (selected == null) {
-      return;
-    }
-
-    setState(() {
-      _endDate = selected;
     });
   }
 
@@ -832,11 +893,13 @@ class _CreateCaseOptions {
     required this.clients,
     required this.psychologists,
     required this.caseTags,
+    required this.caseTypes,
   });
 
   final List<ClientModel> clients;
   final List<PsychologistModel> psychologists;
   final List<CaseTagModel> caseTags;
+  final List<CaseTypeModel> caseTypes;
 
   ClientModel? findClientById(String? id) {
     for (final client in clients) {
@@ -852,6 +915,16 @@ class _CreateCaseOptions {
     for (final psychologist in psychologists) {
       if (psychologist.id == id) {
         return psychologist;
+      }
+    }
+
+    return null;
+  }
+
+  CaseTypeModel? findCaseTypeById(String? id) {
+    for (final caseType in caseTypes) {
+      if (caseType.id == id) {
+        return caseType;
       }
     }
 
@@ -1040,17 +1113,10 @@ class _EntityPickerField<T> extends StatelessWidget {
 }
 
 class _DatePickerField extends StatelessWidget {
-  const _DatePickerField({
-    required this.value,
-    required this.onTap,
-    this.isPlaceholder = false,
-    this.onClear,
-  });
+  const _DatePickerField({required this.value, required this.onTap});
 
   final String value;
-  final bool isPlaceholder;
   final VoidCallback onTap;
-  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -1074,19 +1140,11 @@ class _DatePickerField extends StatelessWidget {
             Expanded(
               child: Text(
                 value,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: isPlaceholder
-                      ? const Color(0xFF98A2B3)
-                      : const Color(0xFF101828),
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF101828)),
               ),
             ),
-            if (onClear != null)
-              IconButton(
-                onPressed: onClear,
-                splashRadius: 18,
-                icon: const Icon(Icons.close_rounded, size: 18),
-              ),
           ],
         ),
       ),

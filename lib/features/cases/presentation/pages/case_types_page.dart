@@ -63,7 +63,7 @@ class _CaseTypesPageState extends State<CaseTypesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Case Type'),
+        title: const Text('Tipe Kasus'),
         actions: <Widget>[
           IconButton(
             onPressed: _reload,
@@ -75,7 +75,7 @@ class _CaseTypesPageState extends State<CaseTypesPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateCaseTypeSheet,
         icon: const Icon(Icons.category_rounded),
-        label: const Text('Tambah Case Type'),
+        label: const Text('Tambah Tipe Kasus'),
       ),
       body: FutureBuilder<List<CaseTypeModel>>(
         future: _caseTypesFuture,
@@ -86,7 +86,7 @@ class _CaseTypesPageState extends State<CaseTypesPage> {
 
           if (snapshot.hasError) {
             return StateMessage(
-              title: 'Gagal memuat case type',
+              title: 'Gagal memuat tipe kasus',
               subtitle: '${snapshot.error}',
               actionLabel: 'Coba Lagi',
               onPressed: _reload,
@@ -96,10 +96,10 @@ class _CaseTypesPageState extends State<CaseTypesPage> {
           final caseTypes = snapshot.data ?? <CaseTypeModel>[];
           if (caseTypes.isEmpty) {
             return StateMessage(
-              title: 'Belum ada case type',
+              title: 'Belum ada tipe kasus',
               subtitle:
-                  'Tambahkan case type terlebih dahulu supaya bisa dipakai saat submit case.',
-              actionLabel: 'Tambah Case Type',
+                  'Tambahkan tipe kasus terlebih dahulu supaya bisa dipakai saat submit case.',
+              actionLabel: 'Tambah Tipe Kasus',
               onPressed: _openCreateCaseTypeSheet,
             );
           }
@@ -146,7 +146,7 @@ class _CaseTypesPageState extends State<CaseTypesPage> {
                           ),
                           IconButton(
                             onPressed: () => _openEditCaseTypeSheet(item),
-                            tooltip: 'Edit Case Type',
+                            tooltip: 'Edit Tipe Kasus',
                             icon: const Icon(Icons.edit_outlined),
                           ),
                           _CaseTypeStatusChip(isActive: item.isActive),
@@ -254,7 +254,7 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                _isEditMode ? 'Update Case Type' : 'Tambah Case Type',
+                _isEditMode ? 'Update Tipe Kasus' : 'Tambah Tipe Kasus',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -272,13 +272,13 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Nama case type',
+                  labelText: 'Nama tipe kasus',
                   hintText: 'Contoh: Konseling Individu',
                 ),
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Nama case type wajib diisi.';
+                    return 'Nama tipe kasus wajib diisi.';
                   }
 
                   return null;
@@ -289,7 +289,7 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(
                   labelText: 'Deskripsi',
-                  hintText: 'Jelaskan penggunaan case type ini.',
+                  hintText: 'Jelaskan penggunaan tipe kasus ini.',
                 ),
                 maxLines: 3,
                 textInputAction: TextInputAction.newline,
@@ -307,7 +307,7 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
                       },
                 title: const Text('Status aktif'),
                 subtitle: const Text(
-                  'Jika aktif, case type bisa langsung dipakai di form case.',
+                  'Jika aktif, tipe kasus bisa langsung dipakai di form case.',
                 ),
               ),
               const SizedBox(height: 20),
@@ -319,8 +319,8 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
                     _isSubmitting
                         ? 'Menyimpan...'
                         : _isEditMode
-                        ? 'Update Case Type'
-                        : 'Simpan Case Type',
+                        ? 'Update Tipe Kasus'
+                        : 'Simpan Tipe Kasus',
                   ),
                 ),
               ),
@@ -367,8 +367,8 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
           SnackBar(
             content: Text(
               _isEditMode
-                  ? 'Case type berhasil diperbarui.'
-                  : 'Case type baru berhasil dibuat.',
+                  ? 'Tipe kasus berhasil diperbarui.'
+                  : 'Tipe kasus baru berhasil dibuat.',
             ),
           ),
         );
@@ -387,8 +387,8 @@ class _CaseTypeFormSheetState extends State<_CaseTypeFormSheet> {
           SnackBar(
             content: Text(
               _isEditMode
-                  ? 'Gagal memperbarui case type: $error'
-                  : 'Gagal membuat case type: $error',
+                  ? 'Gagal memperbarui tipe kasus: $error'
+                  : 'Gagal membuat tipe kasus: $error',
             ),
           ),
         );

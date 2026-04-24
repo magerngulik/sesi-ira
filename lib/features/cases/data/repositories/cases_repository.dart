@@ -37,9 +37,9 @@ class CasesRepository {
   Future<void> createCase({
     required String clientId,
     required String psychologistId,
+    required String caseTypeId,
     required String title,
     required String startDate,
-    String? endDate,
     String? category,
     String? complaint,
     String? goal,
@@ -51,13 +51,14 @@ class CasesRepository {
         .insert(<String, dynamic>{
           'client_id': clientId,
           'assigned_psychologist_id': psychologistId,
+          'case_type_id': caseTypeId,
           'title': title,
           'category': _emptyToNull(category),
           'complaint': _emptyToNull(complaint),
           'goal': _emptyToNull(goal),
           'status': status,
           'start_date': startDate,
-          'end_date': _emptyToNull(endDate),
+          'end_date': null,
         })
         .select('id')
         .single();

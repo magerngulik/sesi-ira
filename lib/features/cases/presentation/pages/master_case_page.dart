@@ -101,9 +101,9 @@ class MasterCasePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _MasterCaseCard(
-                title: 'Case Type',
+                title: 'Tipe Kasus',
                 subtitle:
-                    'Data tipe case ini dipakai saat submit case untuk menentukan jenis layanan atau alur penanganannya.',
+                    'Data tipe kasus ini dipakai saat submit case untuk menentukan jenis layanan atau alur penanganannya.',
                 badge: 'Required',
                 icon: Icons.category_rounded,
                 accent: const Color(0xFF2563EB),
