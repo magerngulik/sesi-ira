@@ -5,6 +5,7 @@ import 'package:sesi_ira/core/widgets/dashed_line.dart';
 
 import '../../../cases/presentation/pages/cases_page.dart';
 import '../../../clients/presentation/pages/clients_page.dart';
+import '../../../master_data/presentation/pages/master_data_page.dart';
 import '../../../psychologists/presentation/pages/psychologists_page.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
@@ -19,37 +20,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthViewState>(
       builder: (context, state) {
-        final user = state.user;
-        final email = user?.email ?? 'guest@sesi-ira.dev';
-        final greetingName = _greetingName(email);
         final screenWidth = MediaQuery.sizeOf(context).width;
         final isDesktop = screenWidth >= 920;
         final summaryCrossAxisCount = isDesktop ? 4 : 2;
-        final featureCrossAxisCount = isDesktop ? 3 : 1;
-        final workflowItems = const <_WorkflowItemData>[
-          _WorkflowItemData(
-            title: '1. Tambah klien',
-            description: 'Lengkapi biodata, nomor kontak, dan catatan awal.',
-            icon: Icons.person_add_alt_1_rounded,
-          ),
-          _WorkflowItemData(
-            title: '2. Siapkan psikolog',
-            description:
-                'Pastikan data psikolog aktif tersedia untuk assignment.',
-            icon: Icons.medical_services_rounded,
-          ),
-          _WorkflowItemData(
-            title: '3. Buat case',
-            description: 'Tentukan tujuan, keluhan, kategori, dan status awal.',
-            icon: Icons.folder_special_rounded,
-          ),
-          _WorkflowItemData(
-            title: '4. Lanjut ke sesi',
-            description:
-                'Struktur dashboard sudah siap untuk modul sesi berikutnya.',
-            icon: Icons.calendar_month_rounded,
-          ),
-        ];
 
         return Scaffold(
           appBar: AppBar(
@@ -79,13 +52,11 @@ class HomePage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 children: <Widget>[
-                  // _HeroSection(
-                  //   greetingName: greetingName,
-                  //   email: email,
-                  //   status: state.status.name,
-                  //   onPrimaryTap: () => context.push(CasesPage.path),
-                  //   onSecondaryTap: () => context.push(ClientsPage.path),
-                  // ),
+                  _HeroSection(
+                    status: state.status.name,
+                    onPrimaryTap: () => context.push(MasterDataPage.path),
+                    onSecondaryTap: () => context.push(CasesPage.path),
+                  ),
                   const SizedBox(height: 20),
                   _SectionTitle(
                     title: 'Ringkasan Cepat',
@@ -136,9 +107,9 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _SectionTitle(
-                    title: 'Menu Operasional',
+                    title: 'Navigasi Utama',
                     subtitle:
-                        'Pilih area kerja berdasarkan alur penggunaan aplikasi.',
+                        'Pisahkan area admin untuk master data dan area operasional harian.',
                   ),
                   const SizedBox(height: 12),
                   GridView.count(
@@ -149,6 +120,15 @@ class HomePage extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: <Widget>[
+                      _FeatureCard(
+                        title: 'Master Data',
+                        subtitle:
+                            'Pusat navigasi admin untuk input data dasar psikolog, client, dan kebutuhan modul case.',
+                        badge: 'Admin',
+                        icon: Icons.account_tree_rounded,
+                        accent: const Color(0xFF0F4C81),
+                        onTap: () => context.push(MasterDataPage.path),
+                      ),
                       _FeatureCard(
                         title: 'Manajemen Klien',
                         subtitle:
@@ -179,36 +159,6 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // if (isDesktop)
-                  //   Row(
-                  //     crossAxisAlignment: CrossAxisAlignment.start,
-                  //     children: <Widget>[
-                  //       Expanded(
-                  //         flex: 3,
-                  //         child: _WorkflowPanel(items: workflowItems),
-                  //       ),
-                  //       const SizedBox(width: 12),
-                  //       Expanded(
-                  //         flex: 2,
-                  //         child: _AccountPanel(
-                  //           email: email,
-                  //           status: state.status.name,
-                  //           userId: user?.id ?? 'Belum ada session aktif',
-                  //           onProfileTap: () => context.push(ProfilePage.path),
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   )
-                  // else ...<Widget>[
-                  //   _WorkflowPanel(items: workflowItems),
-                  //   const SizedBox(height: 12),
-                  //   _AccountPanel(
-                  //     email: email,
-                  //     status: state.status.name,
-                  //     userId: user?.id ?? 'Belum ada session aktif',
-                  //     onProfileTap: () => context.push(ProfilePage.path),
-                  //   ),
-                  // ],
                 ],
               ),
             ),
@@ -217,39 +167,15 @@ class HomePage extends StatelessWidget {
       },
     );
   }
-
-  String _greetingName(String email) {
-    final localPart = email.split('@').first;
-    final normalized = localPart
-        .replaceAll('.', ' ')
-        .replaceAll('_', ' ')
-        .trim();
-    if (normalized.isEmpty) {
-      return 'Tim Sesi Ira';
-    }
-
-    return normalized
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .map(
-          (part) =>
-              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
-        )
-        .join(' ');
-  }
 }
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection({
-    required this.greetingName,
-    required this.email,
     required this.status,
     required this.onPrimaryTap,
     required this.onSecondaryTap,
   });
 
-  final String greetingName;
-  final String email;
   final String status;
   final VoidCallback onPrimaryTap;
   final VoidCallback onSecondaryTap;
@@ -325,7 +251,7 @@ class _HeroSection extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Halo, $greetingName',
+                'Dashboard admin dan operasional kini dipisah lebih jelas.',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -334,7 +260,7 @@ class _HeroSection extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Dashboard ini dirapikan untuk memudahkan alur dari intake klien sampai pembentukan case terapi.',
+                'Masuk ke area master data untuk input kebutuhan inti tiap modul, lalu lanjutkan workflow harian ke case dan sesi.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.white.withValues(alpha: 0.9),
                   height: 1.45,
@@ -345,7 +271,6 @@ class _HeroSection extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: <Widget>[
-                  _HeroInfoPill(icon: Icons.mail_outline_rounded, label: email),
                   _HeroInfoPill(
                     icon: Icons.shield_outlined,
                     label: 'Status ${status.toUpperCase()}',
@@ -368,7 +293,7 @@ class _HeroSection extends StatelessWidget {
                       ),
                     ),
                     icon: const Icon(Icons.arrow_forward_rounded),
-                    label: const Text('Buka Case'),
+                    label: const Text('Buka Master Data'),
                   ),
                   OutlinedButton.icon(
                     onPressed: onSecondaryTap,
@@ -382,8 +307,8 @@ class _HeroSection extends StatelessWidget {
                         vertical: 16,
                       ),
                     ),
-                    icon: const Icon(Icons.groups_rounded),
-                    label: const Text('Kelola Klien'),
+                    icon: const Icon(Icons.assignment_rounded),
+                    label: const Text('Buka Case'),
                   ),
                 ],
               ),
@@ -594,164 +519,6 @@ class _FeatureCard extends StatelessWidget {
   }
 }
 
-class _WorkflowPanel extends StatelessWidget {
-  const _WorkflowPanel({required this.items});
-
-  final List<_WorkflowItemData> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Workflow Utama',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Urutan kerja yang paling natural berdasarkan schema yang sudah kita pakai.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF526071)),
-          ),
-          const SizedBox(height: 18),
-          ...items.map((item) => _WorkflowItem(item: item)),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorkflowItem extends StatelessWidget {
-  const _WorkflowItem({required this.item});
-
-  final _WorkflowItemData item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE6F5F2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(item.icon, color: const Color(0xFF0F766E)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item.title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF526071),
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AccountPanel extends StatelessWidget {
-  const _AccountPanel({
-    required this.email,
-    required this.status,
-    required this.userId,
-    required this.onProfileTap,
-  });
-
-  final String email;
-  final String status;
-  final String userId;
-  final VoidCallback onProfileTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF13212E),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.person_rounded, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Akun Aktif',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          _AccountRow(label: 'Email', value: email),
-          _AccountRow(label: 'Status', value: status),
-          _AccountRow(label: 'User ID', value: userId),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onProfileTap,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-              icon: const Icon(Icons.manage_accounts_rounded),
-              label: const Text('Buka Profil'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _HeroInfoPill extends StatelessWidget {
   const _HeroInfoPill({required this.icon, required this.label});
 
@@ -787,49 +554,4 @@ class _HeroInfoPill extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AccountRow extends StatelessWidget {
-  const _AccountRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: const Color(0xFF9FB0C3),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.white, height: 1.35),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorkflowItemData {
-  const _WorkflowItemData({
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
 }

@@ -1,7 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/cases/presentation/pages/case_tags_page.dart';
+import '../../features/cases/presentation/pages/case_types_page.dart';
+import '../../features/cases/presentation/pages/create_case_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
+import '../../features/cases/presentation/pages/master_case_page.dart';
+import '../../features/sessions/presentation/pages/create_session_page.dart';
+import '../../features/sessions/presentation/pages/sessions_page.dart';
 import '../../features/clients/presentation/pages/create_client_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
@@ -9,6 +15,7 @@ import '../../features/auth/presentation/cubit/auth_state.dart';
 import '../../features/auth/presentation/pages/home_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/master_data/presentation/pages/master_data_page.dart';
 import '../../features/psychologists/presentation/pages/create_psychologist_page.dart';
 import '../../features/psychologists/presentation/pages/psychologists_page.dart';
 import 'router_refresh_notifier.dart';
@@ -36,6 +43,11 @@ class AppRouter {
           builder: (context, state) => const ProfilePage(),
         ),
         GoRoute(
+          path: MasterDataPage.path,
+          name: MasterDataPage.name,
+          builder: (context, state) => const MasterDataPage(),
+        ),
+        GoRoute(
           path: ClientsPage.path,
           name: ClientsPage.name,
           builder: (context, state) => const ClientsPage(),
@@ -59,6 +71,42 @@ class AppRouter {
           path: CasesPage.path,
           name: CasesPage.name,
           builder: (context, state) => const CasesPage(),
+        ),
+        GoRoute(
+          path: MasterCasePage.path,
+          name: MasterCasePage.name,
+          builder: (context, state) => const MasterCasePage(),
+        ),
+        GoRoute(
+          path: CreateCasePage.path,
+          name: CreateCasePage.name,
+          builder: (context, state) => const CreateCasePage(),
+        ),
+        GoRoute(
+          path: CaseTagsPage.path,
+          name: CaseTagsPage.name,
+          builder: (context, state) => const CaseTagsPage(),
+        ),
+        GoRoute(
+          path: CaseTypesPage.path,
+          name: CaseTypesPage.name,
+          builder: (context, state) => const CaseTypesPage(),
+        ),
+        GoRoute(
+          path: SessionsPage.path,
+          name: SessionsPage.name,
+          builder: (context, state) {
+            final caseSummary = state.extra as dynamic;
+            return SessionsPage(caseSummary: caseSummary);
+          },
+        ),
+        GoRoute(
+          path: CreateSessionPage.path,
+          name: CreateSessionPage.name,
+          builder: (context, state) {
+            final caseSummary = state.extra as dynamic;
+            return CreateSessionPage(caseSummary: caseSummary);
+          },
         ),
       ],
       redirect: (context, state) {
