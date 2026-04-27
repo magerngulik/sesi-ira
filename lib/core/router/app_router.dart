@@ -7,7 +7,11 @@ import '../../features/cases/presentation/pages/create_case_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/master_case_page.dart';
 import '../../features/sessions/presentation/pages/create_session_page.dart';
+import '../../features/sessions/presentation/pages/assessment_types_page.dart';
+import '../../features/sessions/presentation/pages/intervention_master_page.dart';
+import '../../features/sessions/presentation/pages/master_session_page.dart';
 import '../../features/sessions/presentation/pages/sessions_page.dart';
+import '../../features/sessions/presentation/pages/update_session_page.dart';
 import '../../features/clients/presentation/pages/create_client_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
@@ -93,6 +97,21 @@ class AppRouter {
           builder: (context, state) => const CaseTypesPage(),
         ),
         GoRoute(
+          path: MasterSessionPage.path,
+          name: MasterSessionPage.name,
+          builder: (context, state) => const MasterSessionPage(),
+        ),
+        GoRoute(
+          path: AssessmentTypesPage.path,
+          name: AssessmentTypesPage.name,
+          builder: (context, state) => const AssessmentTypesPage(),
+        ),
+        GoRoute(
+          path: InterventionMasterPage.path,
+          name: InterventionMasterPage.name,
+          builder: (context, state) => const InterventionMasterPage(),
+        ),
+        GoRoute(
           path: SessionsPage.path,
           name: SessionsPage.name,
           builder: (context, state) {
@@ -106,6 +125,14 @@ class AppRouter {
           builder: (context, state) {
             final caseSummary = state.extra as dynamic;
             return CreateSessionPage(caseSummary: caseSummary);
+          },
+        ),
+        GoRoute(
+          path: UpdateSessionPage.path,
+          name: UpdateSessionPage.name,
+          builder: (context, state) {
+            final args = state.extra as UpdateSessionArgs;
+            return UpdateSessionPage(args: args);
           },
         ),
       ],

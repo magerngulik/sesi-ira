@@ -7,6 +7,7 @@ import '../../../cases/data/models/case_summary_model.dart';
 import '../../data/models/session_model.dart';
 import '../../data/repositories/sessions_repository.dart';
 import 'create_session_page.dart';
+import 'update_session_page.dart';
 
 class SessionsPage extends StatefulWidget {
   const SessionsPage({required this.caseSummary, super.key});
@@ -54,6 +55,24 @@ class _SessionsPageState extends State<SessionsPage> {
     final shouldRefresh = await context.push<bool>(
       CreateSessionPage.path,
       extra: widget.caseSummary,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (shouldRefresh == true) {
+      await _reload();
+    }
+  }
+
+  Future<void> _openUpdateSessionPage(SessionModel session) async {
+    final shouldRefresh = await context.push<bool>(
+      UpdateSessionPage.path,
+      extra: UpdateSessionArgs(
+        caseSummary: widget.caseSummary,
+        sessionId: session.id,
+      ),
     );
 
     if (!mounted) {
@@ -179,7 +198,10 @@ class _SessionsPageState extends State<SessionsPage> {
                     ...sessions.map(
                       (session) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
-                        child: _SessionCard(session: session),
+                        child: _SessionCard(
+                          session: session,
+                          onTap: () => _openUpdateSessionPage(session),
+                        ),
                       ),
                     ),
                 ],
@@ -347,91 +369,107 @@ class _SummaryInfoRowWidget extends StatelessWidget {
 }
 
 class _SessionCard extends StatelessWidget {
-  const _SessionCard({required this.session});
+  const _SessionCard({required this.session, required this.onTap});
 
   final SessionModel session;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy');
     final style = _sessionStatusStyle(session.status);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEAECF0)),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x080F172A),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Text(
-                'Session ${session.sessionNumber}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF101828),
-                ),
-              ),
-              const Spacer(),
-              _StatusPill(
-                label: style.label,
-                foregroundColor: style.foregroundColor,
-                backgroundColor: style.backgroundColor,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            dateFormat.format(session.sessionDate),
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: const Color(0xFF475467),
-              fontWeight: FontWeight.w600,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEAECF0)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x080F172A),
+              blurRadius: 18,
+              offset: Offset(0, 8),
             ),
-          ),
-          if ((session.summary ?? '').isNotEmpty) ...<Widget>[
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Text(
+                  'Session ${session.sessionNumber}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF101828),
+                  ),
+                ),
+                const Spacer(),
+                _StatusPill(
+                  label: style.label,
+                  foregroundColor: style.foregroundColor,
+                  backgroundColor: style.backgroundColor,
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
             Text(
-              session.summary!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              dateFormat.format(session.sessionDate),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: const Color(0xFF475467),
-                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if ((session.summary ?? '').isNotEmpty) ...<Widget>[
+              const SizedBox(height: 10),
+              Text(
+                session.summary!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF475467),
+                  height: 1.45,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: <Widget>[
+                if (session.startTime != null || session.endTime != null)
+                  InfoBadge(
+                    icon: Icons.schedule_rounded,
+                    value:
+                        '${session.startTime ?? '--:--'} - ${session.endTime ?? '--:--'}',
+                  ),
+                if (session.durationMinutes != null)
+                  InfoBadge(
+                    icon: Icons.timer_outlined,
+                    value: '${session.durationMinutes} menit',
+                  ),
+                if ((session.followUpType ?? '').isNotEmpty)
+                  InfoBadge(
+                    icon: Icons.assignment_turned_in_outlined,
+                    value: session.followUpType!,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Tap untuk update',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: const Color(0xFF2563EB),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: <Widget>[
-              if (session.startTime != null || session.endTime != null)
-                InfoBadge(
-                  icon: Icons.schedule_rounded,
-                  value:
-                      '${session.startTime ?? '--:--'} - ${session.endTime ?? '--:--'}',
-                ),
-              if (session.durationMinutes != null)
-                InfoBadge(
-                  icon: Icons.timer_outlined,
-                  value: '${session.durationMinutes} menit',
-                ),
-              if ((session.followUpType ?? '').isNotEmpty)
-                InfoBadge(
-                  icon: Icons.assignment_turned_in_outlined,
-                  value: session.followUpType!,
-                ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -369,6 +369,44 @@ class SessionsRepository {
     }
   }
 
+  Future<void> updateSession({
+    required String sessionId,
+    required String sessionDate,
+    required String status,
+    String? startTime,
+    String? endTime,
+    String? complaint,
+    String? summary,
+    String? result,
+    String? recommendation,
+    String? nextPlan,
+    String? followUpType,
+    String? followUpNote,
+    int? durationMinutes,
+    String? specialNote,
+    String? message,
+  }) {
+    return SupabaseService.client
+        .from('sessions')
+        .update(<String, dynamic>{
+          'session_date': sessionDate,
+          'start_time': _emptyToNull(startTime),
+          'end_time': _emptyToNull(endTime),
+          'status': status,
+          'complaint': _emptyToNull(complaint),
+          'summary': _emptyToNull(summary),
+          'result': _emptyToNull(result),
+          'recommendation': _emptyToNull(recommendation),
+          'next_plan': _emptyToNull(nextPlan),
+          'follow_up_type': _emptyToNull(followUpType),
+          'follow_up_note': _emptyToNull(followUpNote),
+          'duration_minutes': durationMinutes,
+          'special_note': _emptyToNull(specialNote),
+          'message': _emptyToNull(message),
+        })
+        .eq('id', sessionId);
+  }
+
   String? _emptyToNull(String? value) {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) {

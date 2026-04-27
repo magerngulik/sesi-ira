@@ -2,28 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sesi_ira/core/widgets/dashed_line.dart';
 
-import '../../../cases/presentation/pages/master_case_page.dart';
-import '../../../clients/presentation/pages/clients_page.dart';
-import '../../../psychologists/presentation/pages/psychologists_page.dart';
-import '../../../sessions/presentation/pages/master_session_page.dart';
+import 'assessment_types_page.dart';
+import 'intervention_master_page.dart';
 
-class MasterDataPage extends StatelessWidget {
-  const MasterDataPage({super.key});
+class MasterSessionPage extends StatelessWidget {
+  const MasterSessionPage({super.key});
 
-  static const String name = 'master-data';
-  static const String path = '/master-data';
+  static const String name = 'master-session';
+  static const String path = '/master-session';
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final crossAxisCount = screenWidth >= 920 ? 2 : 1;
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Master Data')),
+      appBar: AppBar(title: const Text('Master Session')),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: <Color>[Color(0xFFF6F8FC), Color(0xFFEEF4F8)],
+            colors: <Color>[Color(0xFFF7F7FF), Color(0xFFEEF2FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -35,7 +30,7 @@ class MasterDataPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13315C),
+                  color: const Color(0xFF4F46E5),
                   borderRadius: BorderRadius.circular(28),
                 ),
                 child: Column(
@@ -47,11 +42,11 @@ class MasterDataPage extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const Text(
-                        'Admin Workspace',
+                        'Reference Data',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -60,7 +55,7 @@ class MasterDataPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Kelola data dasar per modul dari satu tempat.',
+                      'Siapkan data master yang dibutuhkan sebelum workflow session dipakai.',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             color: Colors.white,
@@ -70,9 +65,9 @@ class MasterDataPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Halaman ini jadi pintu masuk admin untuk input dan maintenance data master seperti klien, psikolog, dan struktur case.',
+                      'Halaman ini jadi tempat kumpulan referensi modul session. Ke depan master session lain bisa ditambah di sini tanpa bikin menu utama makin padat.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: Colors.white.withValues(alpha: 0.9),
                         height: 1.5,
                       ),
                     ),
@@ -81,7 +76,7 @@ class MasterDataPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Navigasi Modul',
+                'Komponen Master',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF17212B),
@@ -89,57 +84,30 @@ class MasterDataPage extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Pilih area master data yang mau diinput atau dirapikan oleh admin.',
+                'Kelola tabel referensi yang dipakai oleh form dan administrasi session.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF526071),
                 ),
               ),
               const SizedBox(height: 14),
-              GridView.count(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: screenWidth >= 920 ? 1.4 : 1.12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: <Widget>[
-                  _MasterDataCard(
-                    title: 'Master Klien',
-                    subtitle:
-                        'Input biodata, kontak, dan catatan dasar klien sebelum masuk ke case.',
-                    badge: 'Client',
-                    icon: Icons.groups_2_rounded,
-                    accent: const Color(0xFF0F766E),
-                    onTap: () => context.push(ClientsPage.path),
-                  ),
-                  _MasterDataCard(
-                    title: 'Master Psikolog',
-                    subtitle:
-                        'Kelola praktisi aktif yang nanti bisa dipilih saat assignment case.',
-                    badge: 'Psychologist',
-                    icon: Icons.psychology_alt_rounded,
-                    accent: const Color(0xFF1D4ED8),
-                    onTap: () => context.push(PsychologistsPage.path),
-                  ),
-                  _MasterDataCard(
-                    title: 'Master Case',
-                    subtitle:
-                        'Kelola komponen referensi yang harus tersedia dulu sebelum form case bisa dipakai.',
-                    badge: 'Case',
-                    icon: Icons.assignment_rounded,
-                    accent: const Color(0xFFD97706),
-                    onTap: () => context.push(MasterCasePage.path),
-                  ),
-                  _MasterDataCard(
-                    title: 'Master Session',
-                    subtitle:
-                        'Kelola komponen referensi untuk modul session dan siapkan ruang untuk master session lain berikutnya.',
-                    badge: 'Session',
-                    icon: Icons.event_note_rounded,
-                    accent: const Color(0xFF4F46E5),
-                    onTap: () => context.push(MasterSessionPage.path),
-                  ),
-                ],
+              _MasterSessionCard(
+                title: 'Assessment Types',
+                subtitle:
+                    'Kelola referensi jenis assessment yang dipakai saat administrasi dan dokumentasi sesi.',
+                badge: 'Required',
+                icon: Icons.fact_check_rounded,
+                accent: const Color(0xFF4F46E5),
+                onTap: () => context.push(AssessmentTypesPage.path),
+              ),
+              const SizedBox(height: 12),
+              _MasterSessionCard(
+                title: 'Intervention Master',
+                subtitle:
+                    'Kelola referensi intervensi yang dipakai saat pencatatan tindakan atau rencana intervensi sesi.',
+                badge: 'Required',
+                icon: Icons.healing_rounded,
+                accent: const Color(0xFFD97706),
+                onTap: () => context.push(InterventionMasterPage.path),
               ),
             ],
           ),
@@ -149,8 +117,8 @@ class MasterDataPage extends StatelessWidget {
   }
 }
 
-class _MasterDataCard extends StatelessWidget {
-  const _MasterDataCard({
+class _MasterSessionCard extends StatelessWidget {
+  const _MasterSessionCard({
     required this.title,
     required this.subtitle,
     required this.badge,
@@ -212,7 +180,7 @@ class _MasterDataCard extends StatelessWidget {
                 ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 24),
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -235,7 +203,7 @@ class _MasterDataCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
                 Text(
-                  'Buka modul',
+                  'Kelola data',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: accent,
                     fontWeight: FontWeight.w800,
