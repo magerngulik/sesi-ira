@@ -11,6 +11,7 @@ class CasesRepository {
           id,
           client_id,
           assigned_psychologist_id,
+          case_type_id,
           title,
           category,
           complaint,
@@ -18,7 +19,12 @@ class CasesRepository {
           status,
           start_date,
           clients:client_id(full_name),
+          case_types:case_type_id(name),
           psychologists:assigned_psychologist_id(name),
+          case_tag_relations(
+            tag_id,
+            case_tags:tag_id(name)
+          ),
           sessions(
             id,
             session_number,

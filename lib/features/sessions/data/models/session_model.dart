@@ -16,9 +16,6 @@ class SessionModel {
     required this.status,
     this.complaint,
     this.summary,
-    this.result,
-    this.recommendation,
-    this.nextPlan,
     required this.isLocked,
     this.lockedAt,
     this.createdAt,
@@ -46,9 +43,6 @@ class SessionModel {
   final String status;
   final String? complaint;
   final String? summary;
-  final String? result;
-  final String? recommendation;
-  final String? nextPlan;
   final bool isLocked;
   final DateTime? lockedAt;
   final DateTime? createdAt;
@@ -90,9 +84,6 @@ class SessionModel {
       status: map['status'] as String? ?? 'scheduled',
       complaint: map['complaint'] as String?,
       summary: map['summary'] as String?,
-      result: map['result'] as String?,
-      recommendation: map['recommendation'] as String?,
-      nextPlan: map['next_plan'] as String?,
       isLocked: map['is_locked'] as bool? ?? false,
       lockedAt: _tryParseDateTime(map['locked_at']),
       createdAt: _tryParseDateTime(map['created_at']),

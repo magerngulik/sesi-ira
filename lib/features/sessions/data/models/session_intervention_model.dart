@@ -18,7 +18,7 @@ class SessionInterventionModel {
   final InterventionModel? intervention;
 
   factory SessionInterventionModel.fromMap(Map<String, dynamic> map) {
-    final interventionMap = map['intervention_master'] as Map<String, dynamic>?;
+    final interventionMap = map['intervention'] as Map<String, dynamic>?;
 
     return SessionInterventionModel(
       id: map['id'] as String,

@@ -1,15 +1,16 @@
+import '../../../../core/error/supabase_error_helper.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../models/intervention_model.dart';
 import '../models/session_model.dart';
 
 class CreateSessionAssessmentInput {
   const CreateSessionAssessmentInput({
-    required this.assessmentType,
+    required this.assessmentTypeId,
     this.assessmentName,
     this.description,
   });
 
-  final String assessmentType;
+  final String assessmentTypeId;
   final String? assessmentName;
   final String? description;
 }
@@ -78,9 +79,6 @@ class SessionsRepository {
           status,
           complaint,
           summary,
-          result,
-          recommendation,
-          next_plan,
           is_locked,
           locked_at,
           created_at,
@@ -125,9 +123,6 @@ class SessionsRepository {
           status,
           complaint,
           summary,
-          result,
-          recommendation,
-          next_plan,
           is_locked,
           locked_at,
           created_at,
@@ -148,11 +143,18 @@ class SessionsRepository {
           session_assessments(
             id,
             session_id,
-            assessment_type,
+            assessment_type_id,
             assessment_name,
             description,
             created_at,
-            updated_at
+            updated_at,
+            assessment_type:assessment_types(
+              id,
+              code,
+              name,
+              description,
+              is_active
+            )
           ),
           session_interventions(
             id,
@@ -160,7 +162,7 @@ class SessionsRepository {
             intervention_id,
             note,
             created_at,
-            intervention_master:intervention_id(
+            intervention:intervention_master(
               id,
               code,
               name,
@@ -260,9 +262,6 @@ class SessionsRepository {
     String? endTime,
     String? complaint,
     String? summary,
-    String? result,
-    String? recommendation,
-    String? nextPlan,
     bool isLocked = false,
     String? followUpType,
     String? followUpNote,
@@ -278,98 +277,103 @@ class SessionsRepository {
     List<CreateSessionInterventionPlanInput> interventionPlans =
         const <CreateSessionInterventionPlanInput>[],
   }) async {
-    final insertedSession = await SupabaseService.client
-        .from('sessions')
-        .insert(<String, dynamic>{
-          'case_id': caseId,
-          'psychologist_id': psychologistId,
-          'session_number': sessionNumber,
-          'session_date': sessionDate,
-          'start_time': _emptyToNull(startTime),
-          'end_time': _emptyToNull(endTime),
-          'status': status,
-          'complaint': _emptyToNull(complaint),
-          'summary': _emptyToNull(summary),
-          'result': _emptyToNull(result),
-          'recommendation': _emptyToNull(recommendation),
-          'next_plan': _emptyToNull(nextPlan),
-          'is_locked': isLocked,
-          'locked_at': isLocked ? DateTime.now().toIso8601String() : null,
-          'follow_up_type': _emptyToNull(followUpType),
-          'follow_up_note': _emptyToNull(followUpNote),
-          'duration_minutes': durationMinutes,
-          'special_note': _emptyToNull(specialNote),
-          'message': _emptyToNull(message),
-        })
-        .select('id')
-        .single();
+    try {
+      final insertedSession = await SupabaseService.client
+          .from('sessions')
+          .insert(<String, dynamic>{
+            'case_id': caseId,
+            'psychologist_id': psychologistId,
+            'session_number': sessionNumber,
+            'session_date': sessionDate,
+            'start_time': _emptyToNull(startTime),
+            'end_time': _emptyToNull(endTime),
+            'status': status,
+            'complaint': _emptyToNull(complaint),
+            'summary': _emptyToNull(summary),
+            'is_locked': isLocked,
+            'locked_at': isLocked ? DateTime.now().toIso8601String() : null,
+            'follow_up_type': _emptyToNull(followUpType),
+            'follow_up_note': _emptyToNull(followUpNote),
+            'duration_minutes': durationMinutes,
+            'special_note': _emptyToNull(specialNote),
+            'message': _emptyToNull(message),
+          })
+          .select('id')
+          .single();
 
-    final sessionId = insertedSession['id'] as String;
+      final sessionId = insertedSession['id'] as String;
 
-    if (diagnoses.isNotEmpty) {
-      await SupabaseService.client
-          .from('session_diagnoses')
-          .insert(
-            diagnoses.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
+      if (diagnoses.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_diagnoses')
+            .insert(
+              diagnoses.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
 
-              return <String, dynamic>{
-                'session_id': sessionId,
-                'diagnosis_order': item.diagnosisOrder ?? index + 1,
-                'diagnosis_text': item.diagnosisText.trim(),
-              };
-            }).toList(),
-          );
-    }
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'diagnosis_order': item.diagnosisOrder ?? index + 1,
+                  'diagnosis_text': item.diagnosisText.trim(),
+                };
+              }).toList(),
+            );
+      }
 
-    if (assessments.isNotEmpty) {
-      await SupabaseService.client
-          .from('session_assessments')
-          .insert(
-            assessments.map((item) {
-              return <String, dynamic>{
-                'session_id': sessionId,
-                'assessment_type': item.assessmentType.trim(),
-                'assessment_name': _emptyToNull(item.assessmentName),
-                'description': _emptyToNull(item.description),
-              };
-            }).toList(),
-          );
-    }
+      if (assessments.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_assessments')
+            .insert(
+              assessments.map((item) {
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'assessment_type_id': item.assessmentTypeId.trim(),
+                  'assessment_name': _emptyToNull(item.assessmentName),
+                  'description': _emptyToNull(item.description),
+                };
+              }).toList(),
+            );
+      }
 
-    if (interventions.isNotEmpty) {
-      await SupabaseService.client
-          .from('session_interventions')
-          .insert(
-            interventions.map((item) {
-              return <String, dynamic>{
-                'session_id': sessionId,
-                'intervention_id': item.interventionId,
-                'note': _emptyToNull(item.note),
-              };
-            }).toList(),
-          );
-    }
+      if (interventions.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_interventions')
+            .insert(
+              interventions.map((item) {
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'intervention_id': item.interventionId,
+                  'note': _emptyToNull(item.note),
+                };
+              }).toList(),
+            );
+      }
 
-    if (interventionPlans.isNotEmpty) {
-      await SupabaseService.client
-          .from('session_intervention_plans')
-          .insert(
-            interventionPlans.map((item) {
-              return <String, dynamic>{
-                'session_id': sessionId,
-                'plan_date': item.planDate,
-                'phase': item.phase.trim(),
-                'before_condition': _emptyToNull(item.beforeCondition),
-                'after_condition': _emptyToNull(item.afterCondition),
-              };
-            }).toList(),
-          );
+      if (interventionPlans.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_intervention_plans')
+            .insert(
+              interventionPlans.map((item) {
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'plan_date': item.planDate,
+                  'phase': item.phase.trim(),
+                  'before_condition': _emptyToNull(item.beforeCondition),
+                  'after_condition': _emptyToNull(item.afterCondition),
+                };
+              }).toList(),
+            );
+      }
+    } catch (error) {
+      throw SupabaseErrorHelper.toAppException(
+        error,
+        action: 'membuat booking session',
+        table: 'sessions',
+      );
     }
   }
 
-  Future<void> updateSession({
+  Future<String> updateSession({
     required String sessionId,
     required String sessionDate,
     required String status,
@@ -377,34 +381,96 @@ class SessionsRepository {
     String? endTime,
     String? complaint,
     String? summary,
-    String? result,
-    String? recommendation,
-    String? nextPlan,
     String? followUpType,
     String? followUpNote,
     int? durationMinutes,
     String? specialNote,
     String? message,
-  }) {
-    return SupabaseService.client
-        .from('sessions')
-        .update(<String, dynamic>{
-          'session_date': sessionDate,
-          'start_time': _emptyToNull(startTime),
-          'end_time': _emptyToNull(endTime),
-          'status': status,
-          'complaint': _emptyToNull(complaint),
-          'summary': _emptyToNull(summary),
-          'result': _emptyToNull(result),
-          'recommendation': _emptyToNull(recommendation),
-          'next_plan': _emptyToNull(nextPlan),
-          'follow_up_type': _emptyToNull(followUpType),
-          'follow_up_note': _emptyToNull(followUpNote),
-          'duration_minutes': durationMinutes,
-          'special_note': _emptyToNull(specialNote),
-          'message': _emptyToNull(message),
-        })
-        .eq('id', sessionId);
+    List<CreateSessionAssessmentInput> assessments =
+        const <CreateSessionAssessmentInput>[],
+    List<CreateSessionInterventionInput> interventions =
+        const <CreateSessionInterventionInput>[],
+  }) async {
+    final payload = <String, dynamic>{
+      'session_date': sessionDate,
+      'start_time': _emptyToNull(startTime),
+      'end_time': _emptyToNull(endTime),
+      'status': status,
+      'complaint': _emptyToNull(complaint),
+      'summary': _emptyToNull(summary),
+      'follow_up_type': _emptyToNull(followUpType),
+      'follow_up_note': _emptyToNull(followUpNote),
+      'duration_minutes': durationMinutes,
+      'special_note': _emptyToNull(specialNote),
+      'message': _emptyToNull(message),
+      if (status == 'done') 'is_locked': true,
+      if (status == 'done') 'locked_at': DateTime.now().toIso8601String(),
+    };
+
+    try {
+      final response = await SupabaseService.client
+          .from('sessions')
+          .update(payload)
+          .eq('id', sessionId)
+          .select('status')
+          .maybeSingle();
+
+      if (response == null) {
+        throw SupabaseErrorHelper.noRowsAffected(
+          action: 'memperbarui session',
+          table: 'sessions',
+          recordId: sessionId,
+        );
+      }
+
+      await SupabaseService.client
+          .from('session_assessments')
+          .delete()
+          .eq('session_id', sessionId);
+
+      if (assessments.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_assessments')
+            .insert(
+              assessments.map((item) {
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'assessment_type_id': item.assessmentTypeId.trim(),
+                  'assessment_name': _emptyToNull(item.assessmentName),
+                  'description': _emptyToNull(item.description),
+                };
+              }).toList(),
+            );
+      }
+
+      await SupabaseService.client
+          .from('session_interventions')
+          .delete()
+          .eq('session_id', sessionId);
+
+      if (interventions.isNotEmpty) {
+        await SupabaseService.client
+            .from('session_interventions')
+            .insert(
+              interventions.map((item) {
+                return <String, dynamic>{
+                  'session_id': sessionId,
+                  'intervention_id': item.interventionId.trim(),
+                  'note': _emptyToNull(item.note),
+                };
+              }).toList(),
+            );
+      }
+
+      return response['status'] as String? ?? '';
+    } catch (error) {
+      throw SupabaseErrorHelper.toAppException(
+        error,
+        action: 'memperbarui session',
+        table: 'sessions',
+        recordId: sessionId,
+      );
+    }
   }
 
   String? _emptyToNull(String? value) {

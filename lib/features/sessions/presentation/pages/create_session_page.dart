@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/error/app_exception.dart';
 import '../../../../core/widgets/feature_support_widgets.dart';
 import '../../../cases/data/models/case_summary_model.dart';
 import '../../data/repositories/sessions_repository.dart';
@@ -20,7 +21,6 @@ class CreateSessionPage extends StatefulWidget {
 class _CreateSessionPageState extends State<CreateSessionPage> {
   final SessionsRepository _repository = const SessionsRepository();
   final _complaintController = TextEditingController();
-  final _messageController = TextEditingController();
   final _specialNoteController = TextEditingController();
   final _displayDateFormat = DateFormat('dd MMM yyyy');
   final _submitDateFormat = DateFormat('yyyy-MM-dd');
@@ -41,7 +41,6 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
   @override
   void dispose() {
     _complaintController.dispose();
-    _messageController.dispose();
     _specialNoteController.dispose();
     super.dispose();
   }
@@ -50,12 +49,14 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
     final sessions = await _repository.fetchSessions(
       caseId: widget.caseSummary.id,
     );
-
-    return _CreateSessionOptions(
-      nextSessionNumber: sessions.isEmpty
-          ? 1
-          : sessions.first.sessionNumber + 1,
+    final highestSessionNumber = sessions.fold<int>(
+      0,
+      (previousValue, session) => previousValue > session.sessionNumber
+          ? previousValue
+          : session.sessionNumber,
     );
+
+    return _CreateSessionOptions(nextSessionNumber: highestSessionNumber + 1);
   }
 
   @override
@@ -219,7 +220,7 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
         const _SectionTitle(title: 'Catatan Booking'),
         const SizedBox(height: 8),
         Text(
-          'Tambahkan catatan awal untuk membantu persiapan sebelum client bertemu psikolog.',
+          'Tambahkan keluhan awal untuk membantu persiapan sebelum client bertemu psikolog.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: const Color(0xFF667085),
             height: 1.45,
@@ -233,17 +234,6 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
           decoration: const InputDecoration(
             labelText: 'Keluhan Awal',
             hintText: 'Isi ringkasan keluhan awal sebelum sesi berlangsung',
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _messageController,
-          minLines: 3,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            labelText: 'Pesan Booking',
-            hintText:
-                'Catatan komunikasi atau informasi tambahan untuk booking',
           ),
         ),
         const SizedBox(height: 12),
@@ -328,6 +318,13 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
   }
 
   Future<void> _submit(_CreateSessionOptions options) async {
+    if (widget.caseSummary.assignedPsychologistId.trim().isEmpty) {
+      _showMessage(
+        'Case ini belum punya psikolog yang ditugaskan, jadi session belum bisa dibuat.',
+      );
+      return;
+    }
+
     if (_startTime == null || _endTime == null) {
       _showMessage('Jam mulai dan jam selesai wajib diisi.');
       return;
@@ -353,7 +350,6 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
         endTime: _toTimeString(_endTime),
         status: 'scheduled',
         complaint: _complaintController.text,
-        message: _messageController.text,
         durationMinutes: durationMinutes,
         specialNote: _specialNoteController.text,
       );
@@ -373,7 +369,7 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
         return;
       }
 
-      _showMessage('Gagal membuat booking session: $error');
+      _showMessage(_formatSubmitError(error));
     } finally {
       if (mounted) {
         setState(() {
@@ -403,6 +399,13 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
     final selected = await showTimePicker(
       context: context,
       initialTime: current ?? TimeOfDay.now(),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
 
     if (selected == null) {
@@ -451,6 +454,19 @@ class _CreateSessionPageState extends State<CreateSessionPage> {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  String _formatSubmitError(Object error) {
+    if (error is AppException) {
+      return error.message;
+    }
+
+    final text = error.toString().trim();
+    if (text.startsWith('Exception: ')) {
+      return text.substring('Exception: '.length);
+    }
+
+    return 'Gagal membuat booking session: $text';
   }
 
   void _showMessage(String message) {

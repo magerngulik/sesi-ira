@@ -116,7 +116,7 @@ class AppRouter {
           name: SessionsPage.name,
           builder: (context, state) {
             final caseSummary = state.extra as dynamic;
-            return SessionsPage(caseSummary: caseSummary);
+            return SessionsPage(caseSummary:caseSummary);
           },
         ),
         GoRoute(

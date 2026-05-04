@@ -130,81 +130,84 @@ class _SessionsPageState extends State<SessionsPage> {
               }
 
               final sessions = snapshot.data ?? <SessionModel>[];
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                children: <Widget>[
-                  FutureBuilder<CaseSessionContext>(
-                    future: _caseContextFuture,
-                    builder: (context, caseContextSnapshot) {
-                      final caseContext =
-                          caseContextSnapshot.data ??
-                          const CaseSessionContext();
+              return RefreshIndicator(
+                onRefresh: _reload,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                  children: <Widget>[
+                    FutureBuilder<CaseSessionContext>(
+                      future: _caseContextFuture,
+                      builder: (context, caseContextSnapshot) {
+                        final caseContext =
+                            caseContextSnapshot.data ??
+                            const CaseSessionContext();
 
-                      return _CaseSummaryCard(
-                        caseSummary: widget.caseSummary,
-                        caseTypeName:
-                            caseContext.caseTypeName ??
-                            widget.caseSummary.caseTypeName,
-                        tagNames: caseContext.tagNames.isNotEmpty
-                            ? caseContext.tagNames
-                            : widget.caseSummary.tagNames,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (sessions.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFEAECF0)),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          Icon(
-                            Icons.event_busy_outlined,
-                            size: 42,
-                            color: const Color(0xFF98A2B3),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Belum ada session',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF101828),
+                        return _CaseSummaryCard(
+                          caseSummary: widget.caseSummary,
+                          caseTypeName:
+                              caseContext.caseTypeName ??
+                              widget.caseSummary.caseTypeName,
+                          tagNames: caseContext.tagNames.isNotEmpty
+                              ? caseContext.tagNames
+                              : widget.caseSummary.tagNames,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (sessions.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFEAECF0)),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            Icon(
+                              Icons.event_busy_outlined,
+                              size: 42,
+                              color: const Color(0xFF98A2B3),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Case ini sudah dipilih, tapi session-nya masih kosong. Tambahkan session pertama untuk mulai mencatat perkembangannya.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF667085),
-                              height: 1.5,
+                            const SizedBox(height: 12),
+                            Text(
+                              'Belum ada session',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF101828),
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Case ini sudah dipilih, tapi session-nya masih kosong. Tambahkan session pertama untuk mulai mencatat perkembangannya.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF667085),
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            FilledButton.icon(
+                              onPressed: _openCreateSessionPage,
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Tambah Session'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...sessions.map(
+                        (session) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _SessionCard(
+                            session: session,
+                            onTap: () => _openUpdateSessionPage(session),
                           ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            onPressed: _openCreateSessionPage,
-                            icon: const Icon(Icons.add_rounded),
-                            label: const Text('Tambah Session'),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    ...sessions.map(
-                      (session) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _SessionCard(
-                          session: session,
-                          onTap: () => _openUpdateSessionPage(session),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -378,6 +381,7 @@ class _SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy');
     final style = _sessionStatusStyle(session.status);
+    final followUpLabel = _followUpLabel(session.followUpType);
 
     return InkWell(
       onTap: onTap,
@@ -408,6 +412,14 @@ class _SessionCard extends StatelessWidget {
                     color: const Color(0xFF101828),
                   ),
                 ),
+                if (session.isLocked) ...<Widget>[
+                  const SizedBox(width: 10),
+                  _StatusPill(
+                    label: 'Locked',
+                    foregroundColor: const Color(0xFF1D4ED8),
+                    backgroundColor: const Color(0xFFDBEAFE),
+                  ),
+                ],
                 const Spacer(),
                 _StatusPill(
                   label: style.label,
@@ -442,18 +454,17 @@ class _SessionCard extends StatelessWidget {
                 if (session.startTime != null || session.endTime != null)
                   InfoBadge(
                     icon: Icons.schedule_rounded,
-                    value:
-                        '${session.startTime ?? '--:--'} - ${session.endTime ?? '--:--'}',
+                    value: '${_formatSessionTime(session.startTime)} - ${_formatSessionTime(session.endTime)}',
                   ),
                 if (session.durationMinutes != null)
                   InfoBadge(
                     icon: Icons.timer_outlined,
                     value: '${session.durationMinutes} menit',
                   ),
-                if ((session.followUpType ?? '').isNotEmpty)
+                if (followUpLabel != null)
                   InfoBadge(
                     icon: Icons.assignment_turned_in_outlined,
-                    value: session.followUpType!,
+                    value: followUpLabel,
                   ),
               ],
             ),
@@ -461,7 +472,7 @@ class _SessionCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'Tap untuk update',
+                session.isLocked ? 'Tap untuk lihat detail' : 'Tap untuk update',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: const Color(0xFF2563EB),
                   fontWeight: FontWeight.w700,
@@ -473,6 +484,31 @@ class _SessionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatSessionTime(String? value) {
+  final raw = value?.trim() ?? '';
+  if (raw.isEmpty) {
+    return '--:--';
+  }
+
+  final parts = raw.split(':');
+  if (parts.length < 2) {
+    return raw;
+  }
+
+  return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+}
+
+String? _followUpLabel(String? value) {
+  return switch (value) {
+    'finished' => 'Finished',
+    'routine_control' => 'Routine Control',
+    'continued_therapy' => 'Continued Therapy',
+    'external_referral' => 'External Referral',
+    null || '' => null,
+    _ => value,
+  };
 }
 
 class _SessionStatusStyle {
@@ -503,21 +539,6 @@ _SessionStatusStyle _sessionStatusStyle(String status) {
       label: 'Cancelled',
       foregroundColor: Color(0xFFB42318),
       backgroundColor: Color(0xFFFEE4E2),
-    ),
-    'no_show' => const _SessionStatusStyle(
-      label: 'No Show',
-      foregroundColor: Color(0xFFB42318),
-      backgroundColor: Color(0xFFFEE4E2),
-    ),
-    'in_progress' => const _SessionStatusStyle(
-      label: 'In Progress',
-      foregroundColor: Color(0xFF175CD3),
-      backgroundColor: Color(0xFFEAF2FF),
-    ),
-    'rescheduled' => const _SessionStatusStyle(
-      label: 'Rescheduled',
-      foregroundColor: Color(0xFFB54708),
-      backgroundColor: Color(0xFFFFF4E5),
     ),
     _ => const _SessionStatusStyle(
       label: 'Scheduled',

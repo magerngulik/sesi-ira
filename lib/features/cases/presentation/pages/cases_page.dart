@@ -772,25 +772,10 @@ _StatusPresentation _progressPresentation(String status) {
       foregroundColor: Color(0xFF175CD3),
       backgroundColor: Color(0xFFEAF2FF),
     ),
-    'in_progress' => const _StatusPresentation(
-      label: 'In Progress',
-      foregroundColor: Color(0xFF027A48),
-      backgroundColor: Color(0xFFE7F6EC),
-    ),
-    'no_show' => const _StatusPresentation(
-      label: 'No Show',
-      foregroundColor: Color(0xFFB42318),
-      backgroundColor: Color(0xFFFEE4E2),
-    ),
     'done' => const _StatusPresentation(
       label: 'Done',
       foregroundColor: Color(0xFF027A48),
       backgroundColor: Color(0xFFE7F6EC),
-    ),
-    'rescheduled' => const _StatusPresentation(
-      label: 'Rescheduled',
-      foregroundColor: Color(0xFFB54708),
-      backgroundColor: Color(0xFFFFF4E5),
     ),
     'cancelled' => const _StatusPresentation(
       label: 'Cancelled',

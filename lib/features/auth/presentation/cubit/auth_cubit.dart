@@ -54,7 +54,9 @@ class AuthCubit extends Cubit<AuthViewState> {
         state.copyWith(
           status: AuthStatus.authenticated,
           user: response.user,
-          message: 'Login berhasil.',
+          message: state.selectedRole == null
+              ? 'Login berhasil.'
+              : 'Login sebagai ${state.selectedRole!.title} berhasil.',
         ),
       );
     } catch (error) {
@@ -103,6 +105,7 @@ class AuthCubit extends Cubit<AuthViewState> {
           status: AuthStatus.unauthenticated,
           user: null,
           message: 'Kamu sudah logout.',
+          clearSelectedRole: true,
         ),
       );
     } catch (error) {
@@ -119,8 +122,18 @@ class AuthCubit extends Cubit<AuthViewState> {
     }
   }
 
-  void toggleAuthMode() {
-    emit(state.copyWith(isLoginMode: !state.isLoginMode, clearMessage: true));
+  void selectLoginRole(LoginRole role) {
+    emit(
+      state.copyWith(
+        selectedRole: role,
+        status: AuthStatus.unauthenticated,
+        clearMessage: true,
+      ),
+    );
+  }
+
+  void clearSelectedRole() {
+    emit(state.copyWith(clearSelectedRole: true, clearMessage: true));
   }
 
   void clearMessage() {

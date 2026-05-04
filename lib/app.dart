@@ -33,6 +33,13 @@ class _AppShellState extends State<AppShell> {
     final router = _appRouter.router;
 
     return MaterialApp.router(
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       title: 'Sesi Ira',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
