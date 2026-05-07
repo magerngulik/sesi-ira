@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/error/app_exception.dart';
 import '../../../../core/widgets/form_section_label.dart';
 import '../../../../core/widgets/image_picker_placeholder_field.dart';
 import '../../../../core/widgets/multi_select_chip_group.dart';
@@ -25,6 +26,8 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _notesController = TextEditingController();
+  final _loginEmailController = TextEditingController();
+  final _loginPasswordController = TextEditingController();
   final _countryCodes = const <String>['+62', '+60', '+65'];
 
   late Future<List<SpecializationModel>> _specializationsFuture;
@@ -33,6 +36,8 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
   XFile? _profileImage;
   XFile? _bannerImage;
   bool _isSubmitting = false;
+  bool _createLoginAccount = false;
+  bool _obscureLoginPassword = true;
 
   @override
   void initState() {
@@ -46,6 +51,8 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
     _phoneController.dispose();
     _emailController.dispose();
     _notesController.dispose();
+    _loginEmailController.dispose();
+    _loginPasswordController.dispose();
     super.dispose();
   }
 
@@ -161,6 +168,29 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
                               return 'Format email belum valid.';
                             }
                             return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        _LoginAccountCard(
+                          value: _createLoginAccount,
+                          loginEmailController: _loginEmailController,
+                          loginPasswordController: _loginPasswordController,
+                          obscurePassword: _obscureLoginPassword,
+                          onChanged: (value) {
+                            setState(() {
+                              _createLoginAccount = value;
+                              if (value &&
+                                  _loginEmailController.text.trim().isEmpty) {
+                                _loginEmailController.text = _emailController
+                                    .text
+                                    .trim();
+                              }
+                            });
+                          },
+                          onTogglePasswordVisibility: () {
+                            setState(() {
+                              _obscureLoginPassword = !_obscureLoginPassword;
+                            });
                           },
                         ),
                         const SizedBox(height: 14),
@@ -363,6 +393,12 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
         phone: '$_selectedCountryCode ${_phoneController.text.trim()}',
         email: _emailController.text,
         notes: _notesController.text,
+        loginAccount: _createLoginAccount
+            ? PsychologistLoginAccountInput(
+                email: _loginEmailController.text,
+                password: _loginPasswordController.text,
+              )
+            : null,
       );
 
       if (!mounted) {
@@ -373,7 +409,13 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Psikolog baru berhasil ditambahkan.')),
+          SnackBar(
+            content: Text(
+              _createLoginAccount
+                  ? 'Psikolog baru berhasil ditambahkan dan akun login sudah dibuat.'
+                  : 'Psikolog baru berhasil ditambahkan tanpa akun login.',
+            ),
+          ),
         );
     } catch (error) {
       if (!mounted) {
@@ -382,9 +424,7 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
 
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('Gagal menambahkan psikolog: $error')),
-        );
+        ..showSnackBar(SnackBar(content: Text(_formatSubmitError(error))));
     } finally {
       if (mounted) {
         setState(() {
@@ -398,6 +438,19 @@ class _CreatePsychologistPageState extends State<CreatePsychologistPage> {
     setState(() {
       _specializationsFuture = _repository.fetchSpecializations();
     });
+  }
+
+  String _formatSubmitError(Object error) {
+    if (error is AppException) {
+      return error.message;
+    }
+
+    final text = error.toString().trim();
+    if (text.startsWith('Exception: ')) {
+      return text.substring('Exception: '.length);
+    }
+
+    return 'Gagal menambahkan psikolog: $text';
   }
 }
 
@@ -417,6 +470,143 @@ class _SpecializationStateCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE1DBE6)),
       ),
       child: child,
+    );
+  }
+}
+
+class _LoginAccountCard extends StatelessWidget {
+  const _LoginAccountCard({
+    required this.value,
+    required this.loginEmailController,
+    required this.loginPasswordController,
+    required this.obscurePassword,
+    required this.onChanged,
+    required this.onTogglePasswordVisibility,
+  });
+
+  final bool value;
+  final TextEditingController loginEmailController;
+  final TextEditingController loginPasswordController;
+  final bool obscurePassword;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onTogglePasswordVisibility;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE1DBE6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Akun Login Psikolog',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1D1C2A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      value
+                          ? 'Akun login akan dibuat bersamaan dengan data psikolog.'
+                          : 'Kalau belum dicentang, sistem hanya menyimpan profil psikolog tanpa akses login.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF6D6A79),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Switch(value: value, onChanged: onChanged),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: value ? const Color(0xFFEEF7F3) : const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              value
+                  ? 'Admin sedang membuat akun login awal untuk psikolog ini. Simpan password awal dengan aman karena psikolog akan memakainya untuk login pertama.'
+                  : 'Tindakan berikutnya kalau akun belum dibuat: data psikolog tetap masuk, tapi psikolog belum bisa login sampai admin membuatkan akun di tahap berikutnya.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF475467),
+                height: 1.45,
+              ),
+            ),
+          ),
+          if (value) ...<Widget>[
+            const SizedBox(height: 16),
+            const FormSectionLabel('Email Login *'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: loginEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'Masukkan email login psikolog',
+              ),
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) {
+                  return 'Email login wajib diisi.';
+                }
+                if (!trimmed.contains('@')) {
+                  return 'Format email login belum valid.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            const FormSectionLabel('Password Awal *'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: loginPasswordController,
+              obscureText: obscurePassword,
+              decoration: InputDecoration(
+                hintText: 'Minimal 6 karakter',
+                suffixIcon: IconButton(
+                  onPressed: onTogglePasswordVisibility,
+                  icon: Icon(
+                    obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                ),
+              ),
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) {
+                  return 'Password awal wajib diisi.';
+                }
+                if (trimmed.length < 6) {
+                  return 'Password awal minimal 6 karakter.';
+                }
+                return null;
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

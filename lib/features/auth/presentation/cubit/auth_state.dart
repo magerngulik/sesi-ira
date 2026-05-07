@@ -1,13 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum AuthStatus {
-  initial,
-  loading,
-  unauthenticated,
-  authenticated,
-  failure,
-}
+enum AuthStatus { initial, loading, unauthenticated, authenticated, failure }
 
 enum LoginRole {
   admin,
@@ -47,6 +41,10 @@ class AuthViewState extends Equatable {
   final User? user;
   final String? message;
   final LoginRole? selectedRole;
+
+  String? get userRole => user?.userMetadata?['role'] as String?;
+
+  bool get isPsychologistUser => userRole == 'psychologist';
 
   AuthViewState copyWith({
     AuthStatus? status,

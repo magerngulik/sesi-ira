@@ -6,6 +6,7 @@ import '../../../../core/config/supabase_config.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import 'home_page.dart';
+import '../../../psychologist_portal/presentation/pages/psychologist_portal_pages.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -42,7 +43,11 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (state.status == AuthStatus.authenticated) {
-          context.go(HomePage.path);
+          context.go(
+            state.isPsychologistUser
+                ? PsychologistDashboardPage.path
+                : HomePage.path,
+          );
         }
       },
       builder: (context, state) {

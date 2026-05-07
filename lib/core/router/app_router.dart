@@ -20,6 +20,7 @@ import '../../features/auth/presentation/pages/home_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/master_data/presentation/pages/master_data_page.dart';
+import '../../features/psychologist_portal/presentation/pages/psychologist_portal_pages.dart';
 import '../../features/psychologists/presentation/pages/create_psychologist_page.dart';
 import '../../features/psychologists/presentation/pages/psychologists_page.dart';
 import 'router_refresh_notifier.dart';
@@ -40,6 +41,56 @@ class AppRouter {
           path: HomePage.path,
           name: HomePage.name,
           builder: (context, state) => const HomePage(),
+        ),
+        GoRoute(
+          path: PsychologistDashboardPage.path,
+          name: PsychologistDashboardPage.name,
+          builder: (context, state) => const PsychologistDashboardPage(),
+        ),
+        GoRoute(
+          path: PsychologistClientsPage.path,
+          name: PsychologistClientsPage.name,
+          builder: (context, state) => const PsychologistClientsPage(),
+        ),
+        GoRoute(
+          path: PsychologistCasesPage.path,
+          name: PsychologistCasesPage.name,
+          builder: (context, state) => const PsychologistCasesPage(),
+        ),
+        GoRoute(
+          path: PsychologistCaseDetailPage.path,
+          name: PsychologistCaseDetailPage.name,
+          builder: (context, state) => const PsychologistCaseDetailPage(),
+        ),
+        GoRoute(
+          path: PsychologistNewSessionPage.path,
+          name: PsychologistNewSessionPage.name,
+          builder: (context, state) => const PsychologistNewSessionPage(),
+        ),
+        GoRoute(
+          path: PsychologistSessionDetailPage.path,
+          name: PsychologistSessionDetailPage.name,
+          builder: (context, state) => const PsychologistSessionDetailPage(),
+        ),
+        GoRoute(
+          path: PsychologistSchedulePage.path,
+          name: PsychologistSchedulePage.name,
+          builder: (context, state) => const PsychologistSchedulePage(),
+        ),
+        GoRoute(
+          path: PsychologistNotificationsPage.path,
+          name: PsychologistNotificationsPage.name,
+          builder: (context, state) => const PsychologistNotificationsPage(),
+        ),
+        GoRoute(
+          path: PsychologistProfilePage.path,
+          name: PsychologistProfilePage.name,
+          builder: (context, state) => const PsychologistProfilePage(),
+        ),
+        GoRoute(
+          path: PsychologistSettingsPage.path,
+          name: PsychologistSettingsPage.name,
+          builder: (context, state) => const PsychologistSettingsPage(),
         ),
         GoRoute(
           path: ProfilePage.path,
@@ -116,7 +167,7 @@ class AppRouter {
           name: SessionsPage.name,
           builder: (context, state) {
             final caseSummary = state.extra as dynamic;
-            return SessionsPage(caseSummary:caseSummary);
+            return SessionsPage(caseSummary: caseSummary);
           },
         ),
         GoRoute(
@@ -157,7 +208,9 @@ class AppRouter {
         }
 
         if (isGoingToLogin) {
-          return HomePage.path;
+          return authState.isPsychologistUser
+              ? PsychologistDashboardPage.path
+              : HomePage.path;
         }
 
         return null;
