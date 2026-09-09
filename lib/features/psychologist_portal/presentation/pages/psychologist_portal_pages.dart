@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/feature_support_widgets.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/psychologist_portal_mock_data.dart';
+import '../../data/psychologist_portal_models.dart';
+import '../../data/psychologist_portal_repository.dart';
 import '../widgets/psychologist_portal_widgets.dart';
 
 class PsychologistDashboardPage extends StatelessWidget {
@@ -15,7 +18,8 @@ class PsychologistDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.home,
+      renderAsShellBody: true,
+      showBottomNavigation: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: <Widget>[
@@ -260,28 +264,99 @@ class PsychologistDashboardPage extends StatelessWidget {
   }
 }
 
-class PsychologistClientsPage extends StatelessWidget {
+class PsychologistClientsPage extends StatefulWidget {
   const PsychologistClientsPage({super.key});
 
   static const String name = 'psychologist-clients';
   static const String path = '/psychologist/clients';
 
   @override
+  State<PsychologistClientsPage> createState() =>
+      _PsychologistClientsPageState();
+}
+
+class _PsychologistClientsPageState extends State<PsychologistClientsPage> {
+  final PsychologistPortalRepository _repository =
+      const PsychologistPortalRepository();
+
+  late Future<List<PsychologistClientPreview>> _clientsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _clientsFuture = _loadClients();
+  }
+
+  Future<List<PsychologistClientPreview>> _loadClients() {
+    final psychologistId = context.read<AuthCubit>().state.psychologistId;
+    if (psychologistId == null || psychologistId.trim().isEmpty) {
+      return Future<List<PsychologistClientPreview>>.error(
+        Exception(
+          'Akun login ini belum terhubung ke data psikolog. Pastikan metadata psychologist_id tersedia.',
+        ),
+      );
+    }
+
+    return _repository.fetchClientsForPsychologist(psychologistId);
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _clientsFuture = _loadClients();
+    });
+
+    await _clientsFuture;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.clients,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        children: <Widget>[
-          const PsychologistSearchBar(hintText: 'Cari klien...'),
-          const SizedBox(height: 16),
-          ...PsychologistPortalMockData.clients.map((client) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: PsychologistClientTile(client: client),
+      renderAsShellBody: true,
+      showBottomNavigation: false,
+      body: FutureBuilder<List<PsychologistClientPreview>>(
+        future: _clientsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return StateMessage(
+              title: 'Gagal memuat klien',
+              subtitle: '${snapshot.error}',
+              actionLabel: 'Coba Lagi',
+              onPressed: _reload,
             );
-          }),
-        ],
+          }
+
+          final clients = snapshot.data ?? <PsychologistClientPreview>[];
+          if (clients.isEmpty) {
+            return StateMessage(
+              title: 'Belum ada klien',
+              subtitle:
+                  'Belum ada client yang terhubung ke case psikolog ini. Tambahkan atau assign case terlebih dahulu.',
+              actionLabel: 'Refresh',
+              onPressed: _reload,
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: _reload,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              children: <Widget>[
+                const PsychologistSearchBar(hintText: 'Cari klien...'),
+                const SizedBox(height: 16),
+                ...clients.map((client) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: PsychologistClientTile(client: client),
+                  );
+                }),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -296,7 +371,8 @@ class PsychologistCasesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.cases,
+      renderAsShellBody: true,
+      showBottomNavigation: false,
       floatingActionButton: FloatingActionButton(
         backgroundColor: PsychologistPortalPalette.primary,
         foregroundColor: Colors.white,
@@ -338,7 +414,6 @@ class PsychologistCaseDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.cases,
       topBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
         decoration: const BoxDecoration(
@@ -860,16 +935,14 @@ class PsychologistSchedulePage extends StatelessWidget {
     ];
 
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.schedule,
+      renderAsShellBody: true,
+      showBottomNavigation: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: <Widget>[
           Row(
             children: <Widget>[
-              InkWell(
-                onTap: () => context.pop(),
-                child: const Icon(Icons.arrow_back_rounded),
-              ),
+              const SizedBox(width: 24),
               const Spacer(),
               Text(
                 'Mei 2024',
@@ -999,7 +1072,6 @@ class PsychologistNotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.home,
       title: 'Notifications',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -1131,7 +1203,8 @@ class PsychologistProfilePage extends StatelessWidget {
     }
 
     return PsychologistPortalScaffold(
-      activeTab: PsychologistNavTab.profile,
+      renderAsShellBody: true,
+      showBottomNavigation: false,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: <Widget>[

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/psychologist_portal_mock_data.dart';
+import '../../data/psychologist_portal_models.dart';
 import '../pages/psychologist_portal_pages.dart';
 
 class PsychologistPortalPalette {
@@ -30,6 +30,7 @@ class PsychologistPortalScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.showBottomNavigation = true,
     this.backgroundColor,
+    this.renderAsShellBody = false,
   });
 
   final Widget body;
@@ -39,26 +40,61 @@ class PsychologistPortalScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool showBottomNavigation;
   final Color? backgroundColor;
+  final bool renderAsShellBody;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = SafeArea(
+      child: Stack(
+        children: <Widget>[
+          Column(
+            children: <Widget>[
+              if (topBar != null)
+                topBar!
+              else if (title != null)
+                PsychologistSimpleTopBar(title: title!),
+              Expanded(child: body),
+            ],
+          ),
+          if (floatingActionButton != null)
+            Positioned(right: 20, bottom: 20, child: floatingActionButton!),
+        ],
+      ),
+    );
+
+    if (renderAsShellBody) {
+      return ColoredBox(
+        color: backgroundColor ?? PsychologistPortalPalette.softRose,
+        child: content,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: backgroundColor ?? PsychologistPortalPalette.softRose,
+      body: content,
+      bottomNavigationBar: showBottomNavigation && activeTab != null
+          ? PsychologistBottomNavigation(activeTab: activeTab!)
+          : null,
+    );
+  }
+}
+
+class PsychologistPortalShell extends StatelessWidget {
+  const PsychologistPortalShell({
+    super.key,
+    required this.child,
+    required this.activeTab,
+  });
+
+  final Widget child;
+  final PsychologistNavTab activeTab;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor ?? PsychologistPortalPalette.softRose,
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            if (topBar != null)
-              topBar!
-            else if (title != null)
-              PsychologistSimpleTopBar(title: title!),
-            Expanded(child: body),
-          ],
-        ),
-      ),
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: showBottomNavigation && activeTab != null
-          ? PsychologistBottomNavigation(activeTab: activeTab!)
-          : null,
+      backgroundColor: PsychologistPortalPalette.softRose,
+      body: child,
+      bottomNavigationBar: PsychologistBottomNavigation(activeTab: activeTab),
     );
   }
 }

@@ -44,6 +44,9 @@ class AuthViewState extends Equatable {
 
   String? get userRole => user?.userMetadata?['role'] as String?;
 
+  String? get psychologistId =>
+      user?.userMetadata?['psychologist_id'] as String?;
+
   bool get isPsychologistUser => userRole == 'psychologist';
 
   AuthViewState copyWith({
